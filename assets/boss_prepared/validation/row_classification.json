@@ -1,0 +1,42 @@
+{
+  "row1": {
+    "status": "confirmed",
+    "name": "idle_walk_cycle_candidate",
+    "reason": "12 coherent side-profile poses showing repeated stance and locomotion"
+  },
+  "row2": {
+    "status": "uncertain",
+    "name": "mixed_physical_poses",
+    "reason": "Contains movement and sword-lighting poses; sequence boundaries unclear"
+  },
+  "row3": {
+    "status": "uncertain",
+    "name": "sword_attack_and_magic_transition",
+    "reason": "Sword poses and effect poses appear; exact chronological grouping unclear"
+  },
+  "row4": {
+    "status": "uncertain",
+    "name": "physical_magic_mixed",
+    "reason": "Physical crouch/attack poses and magic burst effects mixed in the row"
+  },
+  "row5": {
+    "status": "confirmed",
+    "name": "gamehameha_beam_sequence",
+    "reason": "Final columns clearly show a continuous horizontal violet beam with growing/extended forms"
+  },
+  "row6": {
+    "status": "confirmed",
+    "name": "aoe_magic_sequence",
+    "reason": "Rang�e coh�rente pour charge au sol, orbes et zone violet"
+  },
+  "row7": {
+    "status": "uncertain",
+    "name": "empowered_phase_mixed",
+    "reason": "Boss-enhancement and aerial/magic poses appear, but transition sequence is not proven"
+  },
+  "row8": {
+    "status": "uncertain",
+    "name": "phase_or_death_mixed",
+    "reason": "Mixed boss poses and distant effects; death/phase identities not confirmed"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "source": {
+    "file": "source/boss_skeleton_sprite_sheet.png",
+    "width": 1536,
+    "height": 1024,
+    "pixelFormat": "PNG32 (Format32bppArgb)"
+  },
+  "totals": {
+    "decodedPNGFrames": 96,
+    "frameFiles": 96,
+    "emptyFrames": 0,
+    "corruptFrames": 0,
+    "fullyTransparentExpected": 0,
+    "semiTransparentFrames": 96,
+    "fullyOpaqueFrames": 0,
+    "animations": 8,
+    "spritesheets": 8
+  },
+  "integrity": {
+    "allFrameDimensionsValid": true,
+    "alphaPresent": true,
+    "emptyFrameList": []
+  },
+  "uncertainAnimations": [
+    "Idle / walk candidate",
+    "Low walk poses + horizontal slash poses",
+    "Sword poses + slash/effect poses",
+    "Attack poses + magic burst poses",
+    "Cast poses + beam sequence",
+    "Orbs + AOE candidates",
+    "Empowered/phase candidate poses",
+    "Phase-transition / death candidates"
+  ],
+  "missingAnimations": [
+    "run",
+    "jump",
+    "landing",
+    "hurt",
+    "death",
+    "sword_combo",
+    "magic_charge",
+    "projectile",
+    "beam",
+    "summoning",
+    "phase_transition"
+  ],
+  "rectangleCheck": {
+    "status": "manual-preview-required",
+    "reason": "Automatic 128px decomposition is valid for frames, but residual rectangular backgrounds cannot be proven from alpha checks alone."
+  },
+  "deliverables": [
+    "manifest.json",
+    "preview.html",
+    "boss/frames",
+    "boss/sheets",
+    "previews"
+  ]
+}

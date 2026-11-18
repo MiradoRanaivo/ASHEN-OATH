@@ -1,0 +1,173 @@
+{
+  "format": "RGBA",
+  "source": {
+    "file": "source/boss_skeleton_sprite_sheet.png",
+    "width": 1536,
+    "height": 1024,
+    "pixelFormat": "PNG32 (Format32bppArgb)"
+  },
+  "individualFrameDirectory": "boss/frames",
+  "spritesheetDirectory": "boss/sheets",
+  "grid": {
+    "columns": 12,
+    "rows": 8,
+    "cellWidth": 128,
+    "cellHeight": 128,
+    "irregular": true,
+    "uniformGrid": true,
+    "note": "The source uses a visible 128px grid, but animation boundaries and poses must not be inferred by this grid alone."
+  },
+  "animations": {
+    "source_row_01_idle_walk_candidate": {
+      "file": "boss/sheets/source_row_01_idle_walk_candidate.png",
+      "row": 1,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Idle / walk cycle candidate",
+      "confidence": "confirmed",
+      "anchor": "bottom-center"
+    },
+    "source_row_02_low_walk_and_slash_candidate": {
+      "file": "boss/sheets/source_row_02_low_walk_and_slash_candidate.png",
+      "row": 2,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Low walk poses + horizontal slash poses",
+      "confidence": "uncertain",
+      "anchor": "bottom-center"
+    },
+    "source_row_03_sword_poses_and_slash_candidate": {
+      "file": "boss/sheets/source_row_03_sword_poses_and_slash_candidate.png",
+      "row": 3,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Sword poses + slash/effect poses",
+      "confidence": "uncertain",
+      "anchor": "bottom-center"
+    },
+    "source_row_04_attack_and_magic_candidate": {
+      "file": "boss/sheets/source_row_04_attack_and_magic_candidate.png",
+      "row": 4,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Attack poses + magic burst poses",
+      "confidence": "uncertain",
+      "anchor": "bottom-center"
+    },
+    "source_row_05_cast_and_beam_candidate": {
+      "file": "boss/sheets/source_row_05_cast_and_beam_candidate.png",
+      "row": 5,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Gamehameha beam sequence",
+      "confidence": "confirmed",
+      "anchor": "bottom-center"
+    },
+    "source_row_06_orbs_and_aoe_candidate": {
+      "file": "boss/sheets/source_row_06_orbs_and_aoe_candidate.png",
+      "row": 6,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "AOE and orb magic sequence",
+      "confidence": "confirmed",
+      "anchor": "bottom-center"
+    },
+    "source_row_07_empowered_phase_candidate": {
+      "file": "boss/sheets/source_row_07_empowered_phase_candidate.png",
+      "row": 7,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Empowered/phase candidate poses",
+      "confidence": "uncertain",
+      "anchor": "bottom-center"
+    },
+    "source_row_08_phase_transition_or_death_candidate": {
+      "file": "boss/sheets/source_row_08_phase_transition_or_death_candidate.png",
+      "row": 8,
+      "columnRange": [
+        1,
+        12
+      ],
+      "frameCount": 12,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "frameRate": 8,
+      "repeat": -1,
+      "label": "Phase-transition / death candidates",
+      "confidence": "uncertain",
+      "anchor": "bottom-center"
+    }
+  },
+  "missingAnimations": [
+    "run",
+    "jump",
+    "landing",
+    "hurt",
+    "death",
+    "sword_combo",
+    "magic_charge",
+    "projectile",
+    "beam",
+    "summoning",
+    "phase_transition"
+  ],
+  "missingReason": "The source may contain some of these visually, but individual action boundaries and chronological sequences are not identified reliably by the available documentation.",
+  "phase": "1.5_visual_validation",
+  "validation": {
+    "frameCount": 96,
+    "validatedFrames": 96,
+    "correctedFrames": 0,
+    "rejectedFrames": 0,
+    "rectangularResidueDetected": false,
+    "manualStatus": "Visual inspection performed on white, black and checker previews"
+  }
+}

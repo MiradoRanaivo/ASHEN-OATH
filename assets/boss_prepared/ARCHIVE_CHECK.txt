@@ -1,0 +1,4 @@
+Archive=boss_squelette_prepared.zip
+Entries=142
+Frames=96
+Sheets=8

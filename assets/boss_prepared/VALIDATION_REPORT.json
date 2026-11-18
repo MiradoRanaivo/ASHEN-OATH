@@ -1,0 +1,42 @@
+{
+  "phase": "1.5_visual_validation",
+  "source": "boss_skeleton_sprite_sheet.png",
+  "summary": {
+    "totalFrames": 96,
+    "validatedFrames": 96,
+    "correctedFrames": 0,
+    "rejectedFrames": 0,
+    "confirmedRows": [
+      "row1",
+      "row5",
+      "row6"
+    ],
+    "uncertainRows": [
+      "row2",
+      "row3",
+      "row4",
+      "row7",
+      "row8"
+    ],
+    "rectangleResidueDetected": false,
+    "unresolvedProblems": [
+      "Exact frame boundaries for many mixed-action rows",
+      "Death and hurt sequences not confirmed",
+      "Jump and landing not confirmed",
+      "Run, sword combo, summon and magic-charge sequences not confirmed"
+    ]
+  },
+  "frames": {
+    "allDimensions": "128x128",
+    "format": "PNG RGBA",
+    "backgroundsInspected": [
+      "checkerboard",
+      "white",
+      "black"
+    ],
+    "corruption": 0,
+    "empty": 0
+  },
+  "framesAudit": "validation/frame_audit.json",
+  "rowClassification": "validation/row_classification.json"
+}
