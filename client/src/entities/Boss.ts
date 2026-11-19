@@ -53,7 +53,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     if (this.aiState === 'hurt') {
       this.setVelocityX(0);
       if (this.stateElapsed >= BOSS_AI.hurtStunMs) {
-        this.enterState(distance <= BOSS_AI.attackDistance ? 'attack-preparation' : 'approach');
+        if (distance > BOSS_AI.loseRange) {
+          this.enterState('idle');
+        } else if (distance <= BOSS_AI.attackDistance) {
+          this.enterState('recovery');
+        } else {
+          this.enterState('approach');
+        }
       }
       return;
     }
@@ -64,13 +70,15 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(0);
       if (distance <= BOSS_AI.detectRange) {
         this.facePlayer(player);
-        this.enterState('detect');
+        if (this.aiState !== 'detect') {
+          this.enterState('detect');
+        }
         if (distance <= BOSS_AI.attackDistance) {
           this.enterState('attack-preparation');
         } else {
           this.enterState('approach');
         }
-      } else if (this.aiState !== 'idle') {
+      } else {
         this.enterState('idle');
       }
       return;
@@ -111,7 +119,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     if (this.aiState === 'recovery') {
       this.setVelocityX(0);
       if (this.stateElapsed >= BOSS_AI.recoveryMs) {
-        this.enterState(distance <= BOSS_AI.loseRange ? 'approach' : 'idle');
+        if (distance > BOSS_AI.loseRange) {
+          this.enterState('idle');
+        } else if (distance <= BOSS_AI.attackDistance) {
+          this.enterState('attack-preparation');
+        } else {
+          this.enterState('approach');
+        }
       }
     }
   }
@@ -131,12 +145,14 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     if (this.isDead) {
       this.enterState('dead');
+      this.play(ANIM.bossDeath);
       this.scene.events.emit('boss-died', this);
       this.setVelocity(0, 0);
       this.setAlpha(0.6);
       this.disableBody(true, true);
     } else {
       this.enterState('hurt');
+      this.play(ANIM.bossHurt);
     }
 
     return true;
@@ -174,9 +190,11 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.aiState = next;
     this.stateElapsed = 0;
 
-    if (next === 'idle' || next === 'detect' || next === 'approach') {
+    if (next === 'idle' || next === 'detect') {
       this.setVelocityX(0);
       this.play(ANIM.bossIdle, true);
+    } else if (next === 'approach') {
+      this.play(ANIM.bossWalk, true);
     } else if (next === 'dead') {
       this.setVelocity(0, 0);
     }

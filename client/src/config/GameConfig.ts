@@ -144,6 +144,18 @@ export const ENEMY = {
     attackCooldownMs: 780,
     stunMs: 240,
   },
+  demon: {
+    hp: 76,
+    speed: 48,
+    chaseSpeed: 88,
+    damage: 15,
+    detectRange: 180,
+    attackRange: 48,
+    scale: 0.62,
+    body: { width: 42, height: 45, offsetX: 40, offsetY: 28 },
+    attackCooldownMs: 950,
+    stunMs: 280,
+  },
 } as const satisfies Record<string, EnemyProfile>;
 
 export type EnemyKind = keyof typeof ENEMY;

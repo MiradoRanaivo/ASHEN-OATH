@@ -20,6 +20,12 @@ export const ANIM = {
   bossIdle: 'boss-idle-loop',
   bossBeam: 'boss-beam-loop',
   bossMagic: 'boss-magic-loop',
+  bossWalk: 'boss-walk-loop',
+  bossRun: 'boss-run-loop',
+  bossAttack: 'boss-attack',
+  bossCharge: 'boss-charge',
+  bossHurt: 'boss-hurt',
+  bossDeath: 'boss-death',
 } as const;
 
 interface AnimSpec {
@@ -49,14 +55,22 @@ const SPECS: readonly AnimSpec[] = [
   { key: ANIM.enemyAttack('zombie'), sheet: 'zombie', start: 0, end: 5, frameRate: CLIP.enemyAttack.fps, repeat: 0 },
   { key: ANIM.enemyIdle('bandit'), sheet: 'bandit', start: 0, end: 1, frameRate: 4, repeat: -1 },
   { key: ANIM.enemyAttack('bandit'), sheet: 'bandit', start: 0, end: 5, frameRate: CLIP.enemyAttack.fps, repeat: 0 },
+  { key: ANIM.enemyIdle('demon'), sheet: 'demon', start: 0, end: 1, frameRate: 4, repeat: -1 },
+  { key: ANIM.enemyAttack('demon'), sheet: 'demon', start: 0, end: 5, frameRate: CLIP.enemyAttack.fps, repeat: 0 },
 
   { key: ANIM.impact, sheet: 'impact', start: 0, end: 4, frameRate: 24, repeat: 0 },
   { key: ANIM.damage, sheet: 'damage', start: 0, end: 5, frameRate: 18, repeat: 0 },
   { key: ANIM.death, sheet: 'death-fx', start: 0, end: 2, frameRate: 12, repeat: 0 },
 
-  { key: ANIM.bossIdle, sheet: 'boss-idle', start: 0, end: 11, frameRate: 8, repeat: -1 },
-  { key: ANIM.bossBeam, sheet: 'boss-beam', start: 0, end: 11, frameRate: 8, repeat: 0 },
-  { key: ANIM.bossMagic, sheet: 'boss-magic', start: 0, end: 11, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossIdle, sheet: 'boss-idle', start: 0, end: 5, frameRate: 8, repeat: -1 },
+  { key: ANIM.bossWalk, sheet: 'boss-walk', start: 0, end: 5, frameRate: 8, repeat: -1 },
+  { key: ANIM.bossRun, sheet: 'boss-run', start: 0, end: 5, frameRate: 10, repeat: -1 },
+  { key: ANIM.bossAttack, sheet: 'boss-attack', start: 0, end: 5, frameRate: 10, repeat: 0 },
+  { key: ANIM.bossCharge, sheet: 'boss-charge', start: 0, end: 5, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossBeam, sheet: 'boss-beam', start: 0, end: 5, frameRate: 10, repeat: 0 },
+  { key: ANIM.bossMagic, sheet: 'boss-magic', start: 0, end: 5, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossHurt, sheet: 'boss-hurt', start: 0, end: 5, frameRate: 12, repeat: 0 },
+  { key: ANIM.bossDeath, sheet: 'boss-death', start: 0, end: 11, frameRate: 8, repeat: 0 },
 ];
 
 export const ATTACK_DURATION = {

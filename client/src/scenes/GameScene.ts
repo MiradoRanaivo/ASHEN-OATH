@@ -13,6 +13,13 @@ interface PlatformDef {
 }
 
 const PLATFORM_HEIGHT = 16;
+const REGION_WIDTH = VIEW.worldWidth / 4;
+const REGIONS = [
+  { name: 'Crypte oubliée', texture: 'region-medieval', frame: 'medieval-ground', scale: 1, tint: 0xffffff },
+  { name: 'Forêt des racines', texture: 'region-medieval', frame: 'medieval-ground', scale: 1, tint: 0x82985a },
+  { name: 'Village déchu', texture: 'region-industrial', frame: 'industrial-ground', scale: 1, tint: 0xc28b63 },
+  { name: 'Trône du silence', texture: 'region-winter', frame: 'winter-ground', scale: 1, tint: 0xffffff },
+] as const;
 
 const PLATFORMS: readonly PlatformDef[] = [
   { x: 240, surface: 250, width: 480 },
@@ -31,7 +38,7 @@ const ENEMIES: readonly EnemySpawn[] = [
   { kind: 'skeleton', x: 430, y: 250, patrolMin: 330, patrolMax: 468 },
   { kind: 'zombie', x: 900, y: 250, patrolMin: 800, patrolMax: 960 },
   { kind: 'bandit', x: 1440, y: 250, patrolMin: 1350, patrolMax: 1560 },
-  { kind: 'skeleton', x: 1650, y: 250, patrolMin: 1570, patrolMax: 1690 },
+  { kind: 'demon', x: 1650, y: 250, patrolMin: 1570, patrolMax: 1690 },
 ];
 
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
@@ -98,6 +105,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.boss.updateAI(this.player, delta);
+
+    const region = Math.min(3, Math.floor(this.player.x / REGION_WIDTH));
+    this.hud.setRegion(REGIONS[region].name);
 
     this.resolvePlayerAttack();
     this.resolveEnemyAttacks();
@@ -229,28 +239,28 @@ export class GameScene extends Phaser.Scene {
     for (const platform of PLATFORMS) {
       const centerY = platform.surface + PLATFORM_HEIGHT / 2;
       const ledge = this.add.rectangle(platform.x, centerY, platform.width, PLATFORM_HEIGHT, 0x38303b);
-      ledge.setStrokeStyle(1, 0x231d26);
+      ledge.setAlpha(0);
       ledge.setDepth(DEPTH.platform);
       this.platformGroup.add(ledge);
       const body = ledge.body as Phaser.Physics.Arcade.StaticBody;
       body.updateFromGameObject();
 
-      // Arête supérieure éclairée par la lune, puis ombre sous la dalle.
-      this.add.rectangle(platform.x, platform.surface + 1, platform.width - 2, 2, 0x9a7f6b)
-        .setAlpha(0.9)
-        .setDepth(DEPTH.platform + 1);
-      this.add.rectangle(platform.x, platform.surface + PLATFORM_HEIGHT - 1, platform.width - 2, 3, 0x0b0a10)
-        .setAlpha(0.85)
-        .setDepth(DEPTH.platform + 1);
+      const tileCount = Math.ceil(platform.width / 70);
+      for (let i = 0; i < tileCount; i++) {
+        const tileX = platform.x - platform.width / 2 + 35 + i * 70;
+        const regionIndex = Math.min(3, Math.floor(platform.x / REGION_WIDTH));
+        const ground = REGIONS[regionIndex];
+        this.add.image(tileX, platform.surface, ground.texture, ground.frame)
+          .setOrigin(0.5, 0)
+          .setScale(ground.scale)
+          .setTint(ground.tint)
+          .setDepth(DEPTH.platform + 1);
+      }
 
-      // Les dalles surélevées reposent sur un pilier, sinon elles flottent.
       if (platform.surface < VIEW.groundY - 4) {
         const pillarHeight = VIEW.groundY - (platform.surface + PLATFORM_HEIGHT);
         this.add.rectangle(platform.x, platform.surface + PLATFORM_HEIGHT + pillarHeight / 2, Math.min(platform.width, 52), pillarHeight, 0x1c181f)
           .setAlpha(0.95)
-          .setDepth(DEPTH.platform - 1);
-        this.add.rectangle(platform.x - Math.min(platform.width, 52) / 2, platform.surface + PLATFORM_HEIGHT + pillarHeight / 2, 1, pillarHeight, 0x2e262e)
-          .setAlpha(0.9)
           .setDepth(DEPTH.platform - 1);
       }
     }

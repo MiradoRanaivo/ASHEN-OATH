@@ -3,6 +3,7 @@ client/node_modules/
 client/dist/
 dist/
 *.tsbuildinfo
+assets/external_selected/repo/
 .env
 .env.*
 .DS_Store

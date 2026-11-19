@@ -13,8 +13,10 @@ export class Hud {
   private readonly bossName: Phaser.GameObjects.Text;
   private lastHp = -1;
   private lastStamina = -1;
+  private currentRegion = '';
   private bossVisible = false;
   private bossRatio = -1;
+  private readonly regionLabel: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -25,7 +27,7 @@ export class Hud {
       color: '#d8c8ad',
     }).setScrollFactor(0).setDepth(DEPTH.hud);
 
-    scene.add.text(12, 19, 'CRYPTE OUBLIÉE', {
+    this.regionLabel = scene.add.text(12, 19, 'CRYPTE OUBLIÉE', {
       fontFamily: 'Georgia, serif',
       fontSize: '5px',
       color: '#8f8178',
@@ -76,6 +78,13 @@ export class Hud {
       this.bossBars.fillRect(12, 20, 88, 4);
       this.bossBars.fillStyle(COLORS.hp, 1);
       this.bossBars.fillRect(12, 20, 88 * this.bossRatio, 4);
+    }
+  }
+
+  setRegion(name: string): void {
+    if (this.currentRegion !== name) {
+      this.currentRegion = name;
+      this.regionLabel.setText(name.toLocaleUpperCase('fr-FR'));
     }
   }
 
