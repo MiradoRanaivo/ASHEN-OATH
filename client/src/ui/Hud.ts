@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
+import { BOSS_AI, COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
 
 /**
  * HUD minimal : titre de zone, barres de vie et d'endurance, rappel des commandes.
@@ -64,7 +64,7 @@ export class Hud {
     this.riposteLabel.setVisible(riposteReady);
 
     if (bossHp !== undefined && bossMaxHp !== undefined && bossDistance !== undefined) {
-      this.bossVisible = bossDistance <= 260 && bossHp > 0;
+      this.bossVisible = bossDistance <= BOSS_AI.detectRange && bossHp > 0;
       this.bossRatio = Phaser.Math.Clamp(bossHp / bossMaxHp, 0, 1);
       this.bossName.setText(this.bossVisible ? 'ROI SQUELETTE DÉCHU' : '');
     } else {

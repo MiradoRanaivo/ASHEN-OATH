@@ -14,9 +14,8 @@ const BOSS = 'assets/boss/fallen_skeleton_king';
 
 export const IMAGE_ASSETS: readonly { key: string; path: string }[] = [
   { key: 'environment', path: `${WEB2D}/environment_dark_ruins_moonlight.png` },
-  { key: 'region-industrial', path: 'assets/regions_external/industrial/platformIndustrial_sheet.png' },
-  { key: 'region-medieval', path: 'assets/regions_external/medieval/medieval_spritesheet.png' },
-  { key: 'region-winter', path: 'assets/regions_external/winter/snowMid.png' },
+  { key: 'boss-beam-visual', path: `${BOSS}/beam_visual.png` },
+  { key: 'boss-aoe-visual', path: `${BOSS}/aoe_visual.png` },
 ];
 
 export const SHEET_ASSETS: readonly SheetDef[] = [
@@ -44,22 +43,13 @@ export const SHEET_ASSETS: readonly SheetDef[] = [
   { key: 'damage', path: `${WEB2D}/damage_effects_clean_spritesheet.png`, frameWidth: 146, frameHeight: 164, frames: 6 },
   { key: 'death-fx', path: `${WEB2D}/death_animation_clean_spritesheet.png`, frameWidth: 270, frameHeight: 125, frames: 3 },
 
-  // Boss — spritesheets individuelles issues de 01_sprite_sheet_principale.png
-  { key: 'boss-idle', path: `${BOSS}/idle.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-walk', path: `${BOSS}/walk.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-run', path: `${BOSS}/run.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-attack', path: `${BOSS}/attack.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-charge', path: `${BOSS}/magic_charge.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-beam', path: `${BOSS}/magic_beam.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-magic', path: `${BOSS}/magic_aoe.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-hurt', path: `${BOSS}/hurt.png`, frameWidth: 128, frameHeight: 128, frames: 6 },
-  { key: 'boss-death', path: `${BOSS}/death.png`, frameWidth: 128, frameHeight: 128, frames: 12 },
-
-  // Ground réaliste issu du dépôt 2d-assets
-  { key: 'mob-alien-beige', path: 'assets/regions_external/mobs/alienBeige.png', frameWidth: 256, frameHeight: 512, frames: 1 },
-  { key: 'mob-alien-blue', path: 'assets/regions_external/mobs/alienBlue.png', frameWidth: 256, frameHeight: 512, frames: 1 },
-  { key: 'mob-alien-green', path: 'assets/regions_external/mobs/alienGreen.png', frameWidth: 256, frameHeight: 512, frames: 1 },
-  { key: 'mob-alien-pink', path: 'assets/regions_external/mobs/alienPink.png', frameWidth: 256, frameHeight: 512, frames: 1 },
+  // Extracted character silhouettes from the confirmed idle/walk row.
+  { key: 'boss-movement', path: `${BOSS}/movement.png`, frameWidth: 128, frameHeight: 160, frames: 12 },
+  { key: 'boss-melee', path: `${BOSS}/melee.png`, frameWidth: 128, frameHeight: 160, frames: 6 },
+  { key: 'boss-beam-cast', path: `${BOSS}/beam_cast.png`, frameWidth: 128, frameHeight: 160, frames: 9 },
+  { key: 'boss-aoe-cast', path: `${BOSS}/aoe_cast.png`, frameWidth: 128, frameHeight: 160, frames: 4 },
+  // Hurt and death still lack reliable frame boundaries.
+  { key: 'boss-static-pose', path: `${BOSS}/single_pose.png`, frameWidth: 128, frameHeight: 160, frames: 1 },
 ];
 
 /** Dimensions réelles des frames, utilisées pour recaler les corps physiques. */

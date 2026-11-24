@@ -16,7 +16,11 @@ Tous les frames individuels sont des PNG RGBA. Les pixels transparents et semi-t
 
 ## Limites connues
 
-Les rangées ont été découpées sur une grille de 128 pixels. Les cellules individuelles sont disponibles, mais les limites exactes entre Idle, Walk, attaques, magie, transformation et mort ne sont pas documentées dans l’archive. Les animations du manifest sont donc marquées `confidence: ambiguous` et doivent être validées visuellement avant toute intégration.
+La première rangée de la planche source a été validée visuellement : ses 12 silhouettes isolées par composantes alpha sont utilisées pour les animations Idle (poses 1–4) et Walk/Run (poses 5–9) du client. L’asset de mouvement est normalisé en frames 128 × 160 dans `client/public/assets/boss/fallen_skeleton_king/movement.png`.
+
+Les attaques ont aussi été séparées visuellement : `melee.png` contient six poses, `beam_cast.png` neuf frames de charge/tir et `aoe_cast.png` quatre poses. Les effets `beam_visual.png` et `aoe_visual.png` sont ajoutés comme sprites dédiés.
+
+Les limites exactes entre les poses d’attaque, magie, transformation et mort ne sont pas documentées dans l’archive. Ces rangées restent des candidates et ne doivent pas être intégrées comme animations du boss avant validation visuelle.
 
 Les animations nommées dans le brief mais non confirmées restent listées comme manquantes dans `manifest.json`.
 
@@ -32,4 +36,4 @@ Puis ouvrir `http://localhost:8080/` depuis ce dossier.
 
 ## Règle d’intégration
 
-Cette archive ne doit pas être branchée directement dans `GameScene.ts` avant validation. Elle ne contient pas encore une segmentation chronologique fiable des attaques et états du boss.
+Ne pas brancher directement les autres rangées dans `GameScene.ts` : l’extraction de déplacement ne valide pas les séquences d’attaque ni les autres états du boss.

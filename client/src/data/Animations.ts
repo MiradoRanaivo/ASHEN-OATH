@@ -24,6 +24,8 @@ export const ANIM = {
   bossRun: 'boss-run-loop',
   bossAttack: 'boss-attack',
   bossCharge: 'boss-charge',
+  bossBeamCharge: 'boss-beam-charge',
+  bossMagicCharge: 'boss-magic-charge',
   bossHurt: 'boss-hurt',
   bossDeath: 'boss-death',
 } as const;
@@ -62,15 +64,17 @@ const SPECS: readonly AnimSpec[] = [
   { key: ANIM.damage, sheet: 'damage', start: 0, end: 5, frameRate: 18, repeat: 0 },
   { key: ANIM.death, sheet: 'death-fx', start: 0, end: 2, frameRate: 12, repeat: 0 },
 
-  { key: ANIM.bossIdle, sheet: 'boss-idle', start: 0, end: 5, frameRate: 8, repeat: -1 },
-  { key: ANIM.bossWalk, sheet: 'boss-walk', start: 0, end: 5, frameRate: 8, repeat: -1 },
-  { key: ANIM.bossRun, sheet: 'boss-run', start: 0, end: 5, frameRate: 10, repeat: -1 },
-  { key: ANIM.bossAttack, sheet: 'boss-attack', start: 0, end: 5, frameRate: 10, repeat: 0 },
-  { key: ANIM.bossCharge, sheet: 'boss-charge', start: 0, end: 5, frameRate: 8, repeat: 0 },
-  { key: ANIM.bossBeam, sheet: 'boss-beam', start: 0, end: 5, frameRate: 10, repeat: 0 },
-  { key: ANIM.bossMagic, sheet: 'boss-magic', start: 0, end: 5, frameRate: 8, repeat: 0 },
-  { key: ANIM.bossHurt, sheet: 'boss-hurt', start: 0, end: 5, frameRate: 12, repeat: 0 },
-  { key: ANIM.bossDeath, sheet: 'boss-death', start: 0, end: 11, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossIdle, sheet: 'boss-movement', start: 0, end: 3, frameRate: 4, repeat: -1 },
+  { key: ANIM.bossWalk, sheet: 'boss-movement', start: 4, end: 8, frameRate: 8, repeat: -1 },
+  { key: ANIM.bossRun, sheet: 'boss-movement', start: 5, end: 8, frameRate: 10, repeat: -1 },
+  { key: ANIM.bossAttack, sheet: 'boss-melee', start: 0, end: 5, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossCharge, sheet: 'boss-melee', start: 0, end: 1, frameRate: 4, repeat: 0 },
+  { key: ANIM.bossBeamCharge, sheet: 'boss-beam-cast', start: 0, end: 5, frameRate: 8, repeat: -1 },
+  { key: ANIM.bossBeam, sheet: 'boss-beam-cast', start: 6, end: 8, frameRate: 6, repeat: 0 },
+  { key: ANIM.bossMagicCharge, sheet: 'boss-aoe-cast', start: 0, end: 2, frameRate: 6, repeat: -1 },
+  { key: ANIM.bossMagic, sheet: 'boss-aoe-cast', start: 0, end: 3, frameRate: 6, repeat: 0 },
+  { key: ANIM.bossHurt, sheet: 'boss-static-pose', start: 0, end: 0, frameRate: 1, repeat: 0 },
+  { key: ANIM.bossDeath, sheet: 'boss-static-pose', start: 0, end: 0, frameRate: 1, repeat: 0 },
 ];
 
 export const ATTACK_DURATION = {

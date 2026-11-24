@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
+import { BOSS_AI, COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
 import { ANIM } from '../data/Animations';
 import { Enemy, type EnemySpawn } from '../entities/Enemy';
 import { Player, type PlayerInput } from '../entities/Player';
@@ -14,31 +14,28 @@ interface PlatformDef {
 
 const PLATFORM_HEIGHT = 16;
 const REGION_WIDTH = VIEW.worldWidth / 4;
+const BACKGROUND_SCALE = 0.84;
+const BACKGROUND_SURFACE_Y = 334;
 const REGIONS = [
-  { name: 'Crypte oubliée', texture: 'region-medieval', frame: 'medieval-ground', scale: 1, tint: 0xffffff },
-  { name: 'Forêt des racines', texture: 'region-medieval', frame: 'medieval-ground', scale: 1, tint: 0x82985a },
-  { name: 'Village déchu', texture: 'region-industrial', frame: 'industrial-ground', scale: 1, tint: 0xc28b63 },
-  { name: 'Trône du silence', texture: 'region-winter', frame: 'winter-ground', scale: 1, tint: 0xffffff },
+  { name: 'Crypte oubliée', backgroundTint: 0xffffff, atmosphere: 0x17121c, atmosphereAlpha: 0.08, ground: 0x51474a, edge: 0xa18a73, side: 0x282328 },
+  { name: 'Forêt des racines', backgroundTint: 0xc1d4a0, atmosphere: 0x19301e, atmosphereAlpha: 0.22, ground: 0x49583c, edge: 0x9cae6e, side: 0x252d23 },
+  { name: 'Village déchu', backgroundTint: 0xf0c9a1, atmosphere: 0x3c2119, atmosphereAlpha: 0.2, ground: 0x665044, edge: 0xb89168, side: 0x342925 },
+  { name: 'Trône du silence', backgroundTint: 0xaecbf0, atmosphere: 0x14283e, atmosphereAlpha: 0.24, ground: 0x526576, edge: 0xb1cadb, side: 0x283644 },
 ] as const;
 
 const PLATFORMS: readonly PlatformDef[] = [
-  { x: 240, surface: 250, width: 480 },
-  { x: 560, surface: 250, width: 120 },
   { x: 700, surface: 218, width: 140 },
-  { x: 880, surface: 250, width: 180 },
   { x: 1060, surface: 230, width: 160 },
-  { x: 1250, surface: 250, width: 120 },
-  { x: 1520, surface: 250, width: 360 },
   { x: 660, surface: 186, width: 90 },
   { x: 1000, surface: 190, width: 90 },
   { x: 1400, surface: 200, width: 90 },
 ];
 
 const ENEMIES: readonly EnemySpawn[] = [
-  { kind: 'skeleton', x: 430, y: 250, patrolMin: 330, patrolMax: 468 },
-  { kind: 'zombie', x: 900, y: 250, patrolMin: 800, patrolMax: 960 },
-  { kind: 'bandit', x: 1440, y: 250, patrolMin: 1350, patrolMax: 1560 },
-  { kind: 'demon', x: 1650, y: 250, patrolMin: 1570, patrolMax: 1690 },
+  { kind: 'skeleton', x: 330, y: 250, patrolMin: 220, patrolMax: 430 },
+  { kind: 'zombie', x: 825, y: 250, patrolMin: 790, patrolMax: 870 },
+  { kind: 'bandit', x: 1210, y: 250, patrolMin: 1190, patrolMax: 1300 },
+  { kind: 'demon', x: 1360, y: 250, patrolMin: 1320, patrolMax: 1400 },
 ];
 
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
@@ -48,9 +45,14 @@ export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private hud!: Hud;
+  private background!: Phaser.GameObjects.Image;
+  private atmosphere!: Phaser.GameObjects.Rectangle;
+  private activeRegion = -1;
   private deathOverlay!: Phaser.GameObjects.Container;
   private respawnPending = false;
   private boss!: Boss;
+  private bossBeamVisual!: Phaser.GameObjects.Image;
+  private bossAoeVisual!: Phaser.GameObjects.Image;
 
   private keyLeft!: Phaser.Input.Keyboard.Key;
   private keyRight!: Phaser.Input.Keyboard.Key;
@@ -91,7 +93,15 @@ export class GameScene extends Phaser.Scene {
       this.playEffect(ANIM.death, enemy.x, enemy.y - 26, 0.42, DEPTH.effect);
     });
 
-    this.boss = new Boss(this, 1720, VIEW.groundY);
+    this.boss = new Boss(this, 1560, VIEW.groundY);
+    this.bossBeamVisual = this.add.image(0, 0, 'boss-beam-visual')
+      .setDepth(DEPTH.effect)
+      .setVisible(false);
+    this.bossAoeVisual = this.add.image(0, 0, 'boss-aoe-visual')
+      .setDepth(DEPTH.effect - 0.1)
+      .setOrigin(0.5, 1)
+      .setDisplaySize(240, 110)
+      .setVisible(false);
     this.physics.add.collider(this.boss, this.platformGroup);
     this.physics.add.collider(this.player, this.boss);
   }
@@ -105,11 +115,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.boss.updateAI(this.player, delta);
+    this.updateBossAttackVisuals(_time);
 
     const region = Math.min(3, Math.floor(this.player.x / REGION_WIDTH));
+    if (region !== this.activeRegion) {
+      this.activeRegion = region;
+      this.background.setTint(REGIONS[region].backgroundTint);
+      this.atmosphere.setFillStyle(REGIONS[region].atmosphere, REGIONS[region].atmosphereAlpha);
+    }
     this.hud.setRegion(REGIONS[region].name);
 
     this.resolvePlayerAttack();
+    this.resolveBossAttack();
     this.resolveEnemyAttacks();
     this.hud.update(this.player.hp, this.player.stamina, this.player.riposteReady, this.boss.hp, this.boss.maxHp, Math.abs(this.player.x - this.boss.x));
     this.handlePlayerDeath();
@@ -175,6 +192,82 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private resolveBossAttack(): void {
+    if (this.player.isDead) {
+      return;
+    }
+
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const target = new Phaser.Geom.Rectangle(body.x, body.y, body.width, body.height);
+    for (const attack of this.boss.getAttackBoxes()) {
+      if (!Phaser.Geom.Intersects.RectangleToRectangle(attack.box, target)) {
+        continue;
+      }
+
+      const result = this.player.takeDamage(attack.damage, this.boss.x);
+      if (result === 'hit') {
+        this.playEffect(
+          ANIM.damage,
+          this.player.x,
+          this.player.y - 30,
+          attack.kind === 'magic' ? 0.6 : 0.45,
+          DEPTH.effect,
+        );
+        this.cameras.main.shake(
+          attack.kind === 'magic' ? 180 : 140,
+          attack.kind === 'magic' ? 0.009 : 0.007,
+        );
+      } else if (result === 'parried') {
+        this.playEffect(ANIM.impact, this.player.x + this.player.facing * 14, this.player.y - 32, 0.5, DEPTH.effect);
+        this.cameras.main.flash(100, 240, 226, 170);
+      }
+    }
+  }
+
+  private updateBossAttackVisuals(time: number): void {
+    const beamActive = this.boss.stateName === 'beam';
+    const facingLeft = this.boss.flipX;
+    this.bossBeamVisual
+      .setVisible(beamActive)
+      .setFlipX(facingLeft)
+      .setOrigin(facingLeft ? 1 : 0, 0.5)
+      .setPosition(this.boss.x + (facingLeft ? -24 : 24), this.boss.y - 72)
+      .setDisplaySize(BOSS_AI.beamRange, BOSS_AI.beamHeight + 14);
+
+    const magicActive = this.boss.stateName === 'magic';
+    this.bossAoeVisual
+      .setVisible(magicActive)
+      .setPosition(this.boss.x, this.boss.y + 2)
+      .setAlpha(0.78 + Math.sin(time / 55) * 0.18);
+  }
+
+  private createPlatformSurface(left: number, surface: number, width: number): void {
+    const centerX = left + width / 2;
+    const ledge = this.add.rectangle(centerX, surface + PLATFORM_HEIGHT / 2, width, PLATFORM_HEIGHT, 0x38303b);
+    ledge.setAlpha(0);
+    this.platformGroup.add(ledge);
+    (ledge.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+
+    const right = left + width;
+    let segmentLeft = left;
+    while (segmentLeft < right) {
+      const regionIndex = Math.min(3, Math.floor(segmentLeft / REGION_WIDTH));
+      const region = REGIONS[regionIndex];
+      const segmentRight = Math.min(right, (regionIndex + 1) * REGION_WIDTH);
+      const segmentWidth = segmentRight - segmentLeft;
+      const segmentX = segmentLeft + segmentWidth / 2;
+
+      this.add.rectangle(segmentX, surface + PLATFORM_HEIGHT / 2, segmentWidth + 0.5, PLATFORM_HEIGHT, region.side)
+        .setDepth(DEPTH.platform + 1);
+      this.add.rectangle(segmentX, surface + 2, segmentWidth + 0.5, 4, region.ground)
+        .setDepth(DEPTH.platform + 2);
+      this.add.rectangle(segmentX, surface + 0.5, segmentWidth + 0.5, 1, region.edge)
+        .setDepth(DEPTH.platform + 3);
+
+      segmentLeft = segmentRight;
+    }
+  }
+
   private resolveEnemyAttacks(): void {
     for (const enemy of this.enemies) {
       const box = enemy.getAttackBox();
@@ -215,18 +308,25 @@ export class GameScene extends Phaser.Scene {
       for (const enemy of this.enemies) {
         enemy.reset();
       }
+      this.boss.reset();
       this.cameras.main.fadeIn(360, 0, 0, 0);
       this.respawnPending = false;
     });
   }
 
   private createBackdrop(): void {
-    this.add.image(VIEW.width / 2, VIEW.height / 2, 'environment')
-      .setScale(0.6)
+    const backgroundY = VIEW.groundY - (BACKGROUND_SURFACE_Y - 243) * BACKGROUND_SCALE;
+    this.background = this.add.image(VIEW.width / 2, backgroundY, 'environment')
+      .setScale(BACKGROUND_SCALE)
       .setScrollFactor(0)
       .setDepth(DEPTH.backdrop);
 
-    const shade = this.add.graphics().setScrollFactor(0).setDepth(DEPTH.backdrop + 1);
+    this.atmosphere = this.add.rectangle(0, 0, VIEW.width, VIEW.height, REGIONS[0].atmosphere, REGIONS[0].atmosphereAlpha)
+      .setOrigin(0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.backdrop + 1);
+
+    const shade = this.add.graphics().setScrollFactor(0).setDepth(DEPTH.backdrop + 2);
     shade.fillStyle(0x0b0a10, 0.28);
     shade.fillRect(0, 0, VIEW.width, VIEW.height);
     shade.fillStyle(0x0b0a10, 0.4);
@@ -235,27 +335,10 @@ export class GameScene extends Phaser.Scene {
 
   private createPlatforms(): void {
     this.platformGroup = this.physics.add.staticGroup();
+    this.createPlatformSurface(0, VIEW.groundY, VIEW.worldWidth);
 
     for (const platform of PLATFORMS) {
-      const centerY = platform.surface + PLATFORM_HEIGHT / 2;
-      const ledge = this.add.rectangle(platform.x, centerY, platform.width, PLATFORM_HEIGHT, 0x38303b);
-      ledge.setAlpha(0);
-      ledge.setDepth(DEPTH.platform);
-      this.platformGroup.add(ledge);
-      const body = ledge.body as Phaser.Physics.Arcade.StaticBody;
-      body.updateFromGameObject();
-
-      const tileCount = Math.ceil(platform.width / 70);
-      for (let i = 0; i < tileCount; i++) {
-        const tileX = platform.x - platform.width / 2 + 35 + i * 70;
-        const regionIndex = Math.min(3, Math.floor(platform.x / REGION_WIDTH));
-        const ground = REGIONS[regionIndex];
-        this.add.image(tileX, platform.surface, ground.texture, ground.frame)
-          .setOrigin(0.5, 0)
-          .setScale(ground.scale)
-          .setTint(ground.tint)
-          .setDepth(DEPTH.platform + 1);
-      }
+      this.createPlatformSurface(platform.x - platform.width / 2, platform.surface, platform.width);
 
       if (platform.surface < VIEW.groundY - 4) {
         const pillarHeight = VIEW.groundY - (platform.surface + PLATFORM_HEIGHT);

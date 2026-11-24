@@ -60,9 +60,6 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.textures.get('region-industrial').add('industrial-ground', 0, 0, 0, 70, 70);
-    this.textures.get('region-medieval').add('medieval-ground', 0, 280, 980, 70, 70);
-    this.textures.get('region-winter').add('winter-ground', 0, 0, 0, 70, 70);
     registerAnimations(this);
 
     if (this.missing.length > 0) {
