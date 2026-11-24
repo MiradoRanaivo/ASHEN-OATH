@@ -48,7 +48,8 @@ export const SHEET_ASSETS: readonly SheetDef[] = [
   { key: 'boss-melee', path: `${BOSS}/melee.png`, frameWidth: 128, frameHeight: 160, frames: 6 },
   { key: 'boss-beam-cast', path: `${BOSS}/beam_cast.png`, frameWidth: 128, frameHeight: 160, frames: 9 },
   { key: 'boss-aoe-cast', path: `${BOSS}/aoe_cast.png`, frameWidth: 128, frameHeight: 160, frames: 4 },
-  // Hurt and death still lack reliable frame boundaries.
+  { key: 'boss-hurt', path: `${BOSS}/hurt.png`, frameWidth: 128, frameHeight: 160, frames: 3 },
+  { key: 'boss-death', path: `${BOSS}/death.png`, frameWidth: 128, frameHeight: 160, frames: 3 },
   { key: 'boss-static-pose', path: `${BOSS}/single_pose.png`, frameWidth: 128, frameHeight: 160, frames: 1 },
 ];
 

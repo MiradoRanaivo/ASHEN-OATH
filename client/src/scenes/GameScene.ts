@@ -14,6 +14,8 @@ interface PlatformDef {
 
 const PLATFORM_HEIGHT = 16;
 const REGION_WIDTH = VIEW.worldWidth / 4;
+const BOSS_ARENA_LEFT = 1380;
+const BOSS_ARENA_RIGHT = 1790;
 const BACKGROUND_SCALE = 0.84;
 const BACKGROUND_SURFACE_Y = 334;
 const REGIONS = [
@@ -35,7 +37,7 @@ const ENEMIES: readonly EnemySpawn[] = [
   { kind: 'skeleton', x: 330, y: 250, patrolMin: 220, patrolMax: 430 },
   { kind: 'zombie', x: 825, y: 250, patrolMin: 790, patrolMax: 870 },
   { kind: 'bandit', x: 1210, y: 250, patrolMin: 1190, patrolMax: 1300 },
-  { kind: 'demon', x: 1360, y: 250, patrolMin: 1320, patrolMax: 1400 },
+  { kind: 'demon', x: 1320, y: 250, patrolMin: 1240, patrolMax: 1360 },
 ];
 
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
@@ -53,6 +55,9 @@ export class GameScene extends Phaser.Scene {
   private boss!: Boss;
   private bossBeamVisual!: Phaser.GameObjects.Image;
   private bossAoeVisual!: Phaser.GameObjects.Image;
+  private bossArenaGate!: Phaser.GameObjects.Rectangle;
+  private bossArenaGateBody!: Phaser.Physics.Arcade.StaticBody;
+  private bossArenaGateVisible = false;
 
   private keyLeft!: Phaser.Input.Keyboard.Key;
   private keyRight!: Phaser.Input.Keyboard.Key;
@@ -75,6 +80,7 @@ export class GameScene extends Phaser.Scene {
 
     this.createBackdrop();
     this.createPlatforms();
+    this.createBossArena();
 
     this.player = new Player(this, SPAWN_POINT.x, SPAWN_POINT.y);
     this.physics.add.collider(this.player, this.platformGroup);
@@ -104,6 +110,8 @@ export class GameScene extends Phaser.Scene {
       .setVisible(false);
     this.physics.add.collider(this.boss, this.platformGroup);
     this.physics.add.collider(this.player, this.boss);
+    this.physics.add.collider(this.player, this.bossArenaGate);
+    this.physics.add.collider(this.boss, this.bossArenaGate);
   }
 
   update(_time: number, deltaMs: number): void {
@@ -116,6 +124,7 @@ export class GameScene extends Phaser.Scene {
 
     this.boss.updateAI(this.player, delta);
     this.updateBossAttackVisuals(_time);
+    this.updateBossArena();
 
     const region = Math.min(3, Math.floor(this.player.x / REGION_WIDTH));
     if (region !== this.activeRegion) {
@@ -239,6 +248,50 @@ export class GameScene extends Phaser.Scene {
       .setVisible(magicActive)
       .setPosition(this.boss.x, this.boss.y + 2)
       .setAlpha(0.78 + Math.sin(time / 55) * 0.18);
+  }
+
+  private createBossArena(): void {
+    const arenaCenter = (BOSS_ARENA_LEFT + BOSS_ARENA_RIGHT) / 2;
+    this.add.rectangle(arenaCenter, 210, BOSS_ARENA_RIGHT - BOSS_ARENA_LEFT, 80, 0x11101a, 0.28)
+      .setDepth(DEPTH.backdrop + 3);
+
+    this.add.rectangle(1428, 226, 18, 48, 0x352641)
+      .setDepth(DEPTH.prop);
+    this.add.rectangle(1692, 226, 18, 48, 0x352641)
+      .setDepth(DEPTH.prop);
+    this.add.rectangle(1560, 214, 70, 16, 0x5a443d)
+      .setDepth(DEPTH.prop);
+    this.add.rectangle(1560, 202, 56, 24, 0x2d2532)
+      .setDepth(DEPTH.prop);
+
+    for (const x of [1428, 1692]) {
+      const brazierBase = this.add.rectangle(x, 250, 30, 12, 0x30262d)
+        .setDepth(DEPTH.prop);
+      this.add.circle(x, 240, 7, 0xd4883e)
+        .setDepth(DEPTH.effect)
+        .setAlpha(0.95);
+      brazierBase.setStrokeStyle(1, 0x70543a);
+    }
+
+    this.bossArenaGate = this.add.rectangle(BOSS_ARENA_LEFT, 214, 14, 72, 0x35232f)
+      .setStrokeStyle(2, 0x7a5264)
+      .setDepth(DEPTH.prop)
+      .setVisible(false);
+    this.physics.add.existing(this.bossArenaGate, true);
+    this.bossArenaGateBody = this.bossArenaGate.body as Phaser.Physics.Arcade.StaticBody;
+    this.bossArenaGateBody.enable = false;
+
+    this.add.rectangle(BOSS_ARENA_RIGHT, 214, 10, 72, 0x19151f)
+      .setDepth(DEPTH.prop);
+  }
+
+  private updateBossArena(): void {
+    const engaged = !this.boss.isDead && this.player.x >= BOSS_ARENA_LEFT - 20;
+    if (engaged !== this.bossArenaGateVisible) {
+      this.bossArenaGateVisible = engaged;
+      this.bossArenaGate.setVisible(engaged);
+      this.bossArenaGateBody.enable = engaged;
+    }
   }
 
   private createPlatformSurface(left: number, surface: number, width: number): void {

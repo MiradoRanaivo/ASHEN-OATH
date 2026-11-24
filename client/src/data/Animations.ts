@@ -73,8 +73,8 @@ const SPECS: readonly AnimSpec[] = [
   { key: ANIM.bossBeam, sheet: 'boss-beam-cast', start: 6, end: 8, frameRate: 6, repeat: 0 },
   { key: ANIM.bossMagicCharge, sheet: 'boss-aoe-cast', start: 0, end: 2, frameRate: 6, repeat: -1 },
   { key: ANIM.bossMagic, sheet: 'boss-aoe-cast', start: 0, end: 3, frameRate: 6, repeat: 0 },
-  { key: ANIM.bossHurt, sheet: 'boss-static-pose', start: 0, end: 0, frameRate: 1, repeat: 0 },
-  { key: ANIM.bossDeath, sheet: 'boss-static-pose', start: 0, end: 0, frameRate: 1, repeat: 0 },
+  { key: ANIM.bossHurt, sheet: 'boss-hurt', start: 0, end: 2, frameRate: 8, repeat: 0 },
+  { key: ANIM.bossDeath, sheet: 'boss-death', start: 0, end: 2, frameRate: 6, repeat: 0 },
 ];
 
 export const ATTACK_DURATION = {
