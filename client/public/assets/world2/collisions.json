@@ -1,0 +1,8 @@
+{
+  "blockingTilesets": [],
+  "objects": {
+    "broken_tree_shadow2_1": { "x": -8, "y": -32, "width": 16, "height": 32 },
+    "rock3_shadow2_1": { "x": -10, "y": -12, "width": 20, "height": 12 },
+    "grave_shadow2_1": { "x": -8, "y": -16, "width": 16, "height": 16 }
+  }
+}

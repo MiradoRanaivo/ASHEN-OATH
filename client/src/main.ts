@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameScene } from './scenes/GameScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { WorldTwoScene } from './scenes/WorldTwoScene';
 import { PHYSICS, VIEW } from './config/GameConfig';
 import './styles.css';
 
@@ -23,7 +24,7 @@ const game = new Phaser.Game({
       debug: false,
     },
   },
-  scene: [PreloadScene, GameScene],
+  scene: [PreloadScene, GameScene, WorldTwoScene],
 });
 
 // Exposé uniquement en développement, pour les tests automatisés du navigateur.

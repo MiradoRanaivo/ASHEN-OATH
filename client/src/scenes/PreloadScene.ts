@@ -57,6 +57,20 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: sheet.frameHeight,
       });
     }
+
+    this.load.atlas(
+      'world2-cursed-atlas',
+      'assets/world2/atlases/cursed-objects.png',
+      'assets/world2/atlases/cursed-objects.json',
+    );
+    this.load.atlas(
+      'world2-undead-atlas',
+      'assets/world2/atlases/undead-objects.png',
+      'assets/world2/atlases/undead-objects.json',
+    );
+
+    this.load.json('world2-animation-config', 'assets/world2/animations/animations.json');
+    this.load.json('world2-collision-config', 'assets/world2/collisions.json');
   }
 
   create(): void {
@@ -69,6 +83,6 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     this.status.setText('PRÊT');
-    this.scene.start('GameScene');
+    this.scene.start('WorldTwoScene');
   }
 }

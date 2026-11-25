@@ -51,6 +51,13 @@ export const SHEET_ASSETS: readonly SheetDef[] = [
   { key: 'boss-hurt', path: `${BOSS}/hurt.png`, frameWidth: 128, frameHeight: 160, frames: 3 },
   { key: 'boss-death', path: `${BOSS}/death.png`, frameWidth: 128, frameHeight: 160, frames: 3 },
   { key: 'boss-static-pose', path: `${BOSS}/single_pose.png`, frameWidth: 128, frameHeight: 160, frames: 1 },
+
+  // Monde 2 — terrain 16x16 vérifié dans tilesets.json
+  { key: 'world2-cursed-ground', path: 'assets/world2/tilesets/cursed-land/ground.png', frameWidth: 16, frameHeight: 16, frames: 2240 },
+  { key: 'world2-undead-ground', path: 'assets/world2/tilesets/undead-land/ground_rocks.png', frameWidth: 16, frameHeight: 16, frames: 2262 },
+
+  // Monde 2 — bande animée vérifiée dans animations.json (shadow2)
+  { key: 'world2-undead-anim1', path: 'assets/world2/animations/undead-anim1-shadow2.png', frameWidth: 112, frameHeight: 128, frames: 6 },
 ];
 
 /** Dimensions réelles des frames, utilisées pour recaler les corps physiques. */
