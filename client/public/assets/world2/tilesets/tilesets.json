@@ -1,0 +1,157 @@
+{
+ "tilesets": {
+  "cursed_bridges": {
+   "image": "tilesets/cursed-land/bridges.png",
+   "tileset": "tilesets/cursed-land/bridges.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 26,
+   "rows": 37,
+   "animatedTiles": 0
+  },
+  "cursed_ground": {
+   "image": "tilesets/cursed-land/ground.png",
+   "tileset": "tilesets/cursed-land/ground.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 40,
+   "rows": 56,
+   "animatedTiles": 0
+  },
+  "cursed_objects": {
+   "image": "tilesets/cursed-land/objects.png",
+   "tileset": "tilesets/cursed-land/objects.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 51,
+   "rows": 70,
+   "animatedTiles": 0
+  },
+  "cursed_details": {
+   "image": "tilesets/cursed-land/details.png",
+   "tileset": "tilesets/cursed-land/details.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 11,
+   "rows": 9,
+   "animatedTiles": 0
+  },
+  "cursed_spots": {
+   "image": "tilesets/cursed-land/spots.png",
+   "tileset": "tilesets/cursed-land/spots.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 21,
+   "rows": 10,
+   "animatedTiles": 0
+  },
+  "cursed_water_coasts": {
+   "image": "tilesets/cursed-land/water_coasts.png",
+   "tileset": "tilesets/cursed-land/water_coasts.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 37,
+   "rows": 73,
+   "animatedTiles": 118
+  },
+  "cursed_water": {
+   "image": "tilesets/cursed-land/water.png",
+   "tileset": "tilesets/cursed-land/water.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 37,
+   "rows": 78,
+   "animatedTiles": 192
+  },
+  "cursed_water_v2": {
+   "image": "tilesets/cursed-land/water_v2.png",
+   "tileset": "tilesets/cursed-land/water_v2.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 37,
+   "rows": 78,
+   "animatedTiles": 177
+  },
+  "undead_ground_rocks": {
+   "image": "tilesets/undead-land/ground_rocks.png",
+   "tileset": "tilesets/undead-land/ground_rocks.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 26,
+   "rows": 87,
+   "animatedTiles": 0
+  },
+  "undead_objects": {
+   "image": "tilesets/undead-land/objects.png",
+   "tileset": "tilesets/undead-land/objects.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 75,
+   "rows": 48,
+   "animatedTiles": 0
+  },
+  "undead_objects_animated": {
+   "image": "tilesets/undead-land/objects_animated.png",
+   "tileset": "tilesets/undead-land/objects_animated.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 44,
+   "rows": 39,
+   "animatedTiles": 70
+  },
+  "undead_objects_animated2": {
+   "image": "tilesets/undead-land/objects_animated2.png",
+   "tileset": "tilesets/undead-land/objects_animated2.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 44,
+   "rows": 39,
+   "animatedTiles": 70
+  },
+  "undead_objects_animated3": {
+   "image": "tilesets/undead-land/objects_animated3.png",
+   "tileset": "tilesets/undead-land/objects_animated3.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 44,
+   "rows": 39,
+   "animatedTiles": 70
+  },
+  "undead_details": {
+   "image": "tilesets/undead-land/details.png",
+   "tileset": "tilesets/undead-land/details.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 40,
+   "rows": 14,
+   "animatedTiles": 0
+  },
+  "undead_water_coasts": {
+   "image": "tilesets/undead-land/water_coasts.png",
+   "tileset": "tilesets/undead-land/water_coasts.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 23,
+   "rows": 61,
+   "animatedTiles": 135
+  },
+  "undead_water": {
+   "image": "tilesets/undead-land/water.png",
+   "tileset": "tilesets/undead-land/water.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 37,
+   "rows": 78,
+   "animatedTiles": 192
+  },
+  "undead_water_v2": {
+   "image": "tilesets/undead-land/water_v2.png",
+   "tileset": "tilesets/undead-land/water_v2.tsx",
+   "tileWidth": 16,
+   "tileHeight": 16,
+   "columns": 37,
+   "rows": 78,
+   "animatedTiles": 177
+  }
+ }
+}

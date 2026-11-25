@@ -1,0 +1,200 @@
+{
+ "undead-anim1-shadow1": {
+  "file": "undead-anim1-shadow1.png",
+  "frameWidth": 112,
+  "frameHeight": 128,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim1-shadow2": {
+  "file": "undead-anim1-shadow2.png",
+  "frameWidth": 112,
+  "frameHeight": 128,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim1-shadow3": {
+  "file": "undead-anim1-shadow3.png",
+  "frameWidth": 112,
+  "frameHeight": 128,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim2-shadow1": {
+  "file": "undead-anim2-shadow1.png",
+  "frameWidth": 80,
+  "frameHeight": 96,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim2-shadow2": {
+  "file": "undead-anim2-shadow2.png",
+  "frameWidth": 80,
+  "frameHeight": 96,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim2-shadow3": {
+  "file": "undead-anim2-shadow3.png",
+  "frameWidth": 80,
+  "frameHeight": 96,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim3-shadow1": {
+  "file": "undead-anim3-shadow1.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim3-shadow2": {
+  "file": "undead-anim3-shadow2.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim3-shadow3": {
+  "file": "undead-anim3-shadow3.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim4-shadow1": {
+  "file": "undead-anim4-shadow1.png",
+  "frameWidth": 80,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim4-shadow2": {
+  "file": "undead-anim4-shadow2.png",
+  "frameWidth": 80,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim4-shadow3": {
+  "file": "undead-anim4-shadow3.png",
+  "frameWidth": 80,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim5-shadow1": {
+  "file": "undead-anim5-shadow1.png",
+  "frameWidth": 96,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim5-shadow2": {
+  "file": "undead-anim5-shadow2.png",
+  "frameWidth": 96,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim5-shadow3": {
+  "file": "undead-anim5-shadow3.png",
+  "frameWidth": 96,
+  "frameHeight": 112,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim6-shadow1": {
+  "file": "undead-anim6-shadow1.png",
+  "frameWidth": 48,
+  "frameHeight": 80,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim6-shadow2": {
+  "file": "undead-anim6-shadow2.png",
+  "frameWidth": 48,
+  "frameHeight": 80,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ },
+ "undead-anim6-shadow3": {
+  "file": "undead-anim6-shadow3.png",
+  "frameWidth": 48,
+  "frameHeight": 80,
+  "frames": 6,
+  "frameDurationMs": 150,
+  "origin": {
+   "x": 0.5,
+   "y": 1.0
+  }
+ }
+}
