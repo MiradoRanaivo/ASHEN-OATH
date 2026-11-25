@@ -76,6 +76,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return ACTION_STATES.includes(this.stateName);
   }
 
+  get isDodging(): boolean {
+    return this.stateName === 'dodge';
+  }
+
+  get isInvulnerable(): boolean {
+    return this.scene.time.now < this.invulnerableUntil;
+  }
+
   get attackId(): number {
     return this.attackCounter;
   }

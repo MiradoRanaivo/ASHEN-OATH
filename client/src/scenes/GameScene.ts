@@ -14,8 +14,8 @@ interface PlatformDef {
 
 const PLATFORM_HEIGHT = 16;
 const REGION_WIDTH = VIEW.worldWidth / 4;
-const BOSS_ARENA_LEFT = 1380;
-const BOSS_ARENA_RIGHT = 1790;
+const BOSS_ARENA_LEFT = 1360;
+const BOSS_ARENA_RIGHT = 2000;
 const BACKGROUND_SCALE = 0.84;
 const BACKGROUND_SURFACE_Y = 334;
 const REGIONS = [
@@ -30,7 +30,6 @@ const PLATFORMS: readonly PlatformDef[] = [
   { x: 1060, surface: 230, width: 160 },
   { x: 660, surface: 186, width: 90 },
   { x: 1000, surface: 190, width: 90 },
-  { x: 1400, surface: 200, width: 90 },
 ];
 
 const ENEMIES: readonly EnemySpawn[] = [
@@ -99,7 +98,7 @@ export class GameScene extends Phaser.Scene {
       this.playEffect(ANIM.death, enemy.x, enemy.y - 26, 0.42, DEPTH.effect);
     });
 
-    this.boss = new Boss(this, 1560, VIEW.groundY);
+    this.boss = new Boss(this, (BOSS_ARENA_LEFT + BOSS_ARENA_RIGHT) / 2, VIEW.groundY);
     this.bossBeamVisual = this.add.image(0, 0, 'boss-beam-visual')
       .setDepth(DEPTH.effect)
       .setVisible(false);
@@ -109,7 +108,12 @@ export class GameScene extends Phaser.Scene {
       .setDisplaySize(240, 110)
       .setVisible(false);
     this.physics.add.collider(this.boss, this.platformGroup);
-    this.physics.add.collider(this.player, this.boss);
+    this.physics.add.collider(
+      this.player,
+      this.boss,
+      undefined,
+      () => !this.player.isDodging,
+    );
     this.physics.add.collider(this.player, this.bossArenaGate);
     this.physics.add.collider(this.boss, this.bossArenaGate);
   }
@@ -234,19 +238,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateBossAttackVisuals(time: number): void {
-    const beamActive = this.boss.stateName === 'beam';
+    const activeBoxes = this.boss.getAttackBoxes();
+    const beamActive = activeBoxes.some((attack) => attack.kind === 'beam');
     const facingLeft = this.boss.flipX;
     this.bossBeamVisual
       .setVisible(beamActive)
       .setFlipX(facingLeft)
-      .setOrigin(facingLeft ? 1 : 0, 0.5)
-      .setPosition(this.boss.x + (facingLeft ? -24 : 24), this.boss.y - 72)
-      .setDisplaySize(BOSS_AI.beamRange, BOSS_AI.beamHeight + 14);
+      .setOrigin(facingLeft ? 1 : 0, 0)
+      .setPosition(this.boss.x + (facingLeft ? -20 : 20), this.boss.y - BOSS_AI.beamHeight - 20)
+      .setDisplaySize(BOSS_AI.beamRange, BOSS_AI.beamHeight);
 
-    const magicActive = this.boss.stateName === 'magic';
+    const magicActive = activeBoxes.some((attack) => attack.kind === 'magic');
     this.bossAoeVisual
       .setVisible(magicActive)
-      .setPosition(this.boss.x, this.boss.y + 2)
+      .setPosition(this.boss.x, this.boss.y)
+      .setOrigin(0.5, 1)
+      .setDisplaySize(BOSS_AI.magicRange, BOSS_AI.magicHeight)
       .setAlpha(0.78 + Math.sin(time / 55) * 0.18);
   }
 
@@ -255,16 +262,16 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(arenaCenter, 210, BOSS_ARENA_RIGHT - BOSS_ARENA_LEFT, 80, 0x11101a, 0.28)
       .setDepth(DEPTH.backdrop + 3);
 
-    this.add.rectangle(1428, 226, 18, 48, 0x352641)
+    this.add.rectangle(BOSS_ARENA_LEFT + 68, 226, 24, 64, 0x352641)
       .setDepth(DEPTH.prop);
-    this.add.rectangle(1692, 226, 18, 48, 0x352641)
+    this.add.rectangle(BOSS_ARENA_RIGHT - 68, 226, 24, 64, 0x352641)
       .setDepth(DEPTH.prop);
-    this.add.rectangle(1560, 214, 70, 16, 0x5a443d)
+    this.add.rectangle(arenaCenter, 214, 96, 16, 0x5a443d)
       .setDepth(DEPTH.prop);
-    this.add.rectangle(1560, 202, 56, 24, 0x2d2532)
+    this.add.rectangle(arenaCenter, 198, 72, 32, 0x2d2532)
       .setDepth(DEPTH.prop);
 
-    for (const x of [1428, 1692]) {
+    for (const x of [BOSS_ARENA_LEFT + 68, BOSS_ARENA_RIGHT - 68]) {
       const brazierBase = this.add.rectangle(x, 250, 30, 12, 0x30262d)
         .setDepth(DEPTH.prop);
       this.add.circle(x, 240, 7, 0xd4883e)
@@ -281,7 +288,7 @@ export class GameScene extends Phaser.Scene {
     this.bossArenaGateBody = this.bossArenaGate.body as Phaser.Physics.Arcade.StaticBody;
     this.bossArenaGateBody.enable = false;
 
-    this.add.rectangle(BOSS_ARENA_RIGHT, 214, 10, 72, 0x19151f)
+    this.add.rectangle(BOSS_ARENA_RIGHT, 214, 14, 88, 0x19151f)
       .setDepth(DEPTH.prop);
   }
 

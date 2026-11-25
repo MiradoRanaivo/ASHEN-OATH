@@ -6,7 +6,7 @@
 export const VIEW = {
   width: 480,
   height: 270,
-  worldWidth: 1800,
+  worldWidth: 2080,
   groundY: 250,
 } as const;
 
@@ -80,10 +80,10 @@ export const PLAYER = {
   hurtInvulnerabilityMs: 650,
   hurtStunMs: 260,
   dodge: {
-    clip: { frames: 6, fps: 16 },
+    clip: { frames: 12, fps: 18 },
     stamina: 16,
     speed: 250,
-    invulnerableMs: 240,
+    invulnerableMs: 667,
   },
   parry: {
     clip: { frames: 5, fps: 14 },

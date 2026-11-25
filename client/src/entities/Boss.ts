@@ -253,12 +253,14 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
           this.enterState('idle');
         } else if (distance <= BOSS_AI.attackDistance) {
           this.enterNextAttack(distance);
-        } else {
-          if (this.empowered) {
+        } else if (this.empowered) {
+          if (distance <= BOSS_AI.beamRange) {
             this.enterNextPhaseTwoRangedAttack();
-          } else {
-            this.enterState('approach');
+            return;
           }
+          this.enterState('approach');
+        } else {
+          this.enterState('approach');
         }
       }
     }
@@ -290,6 +292,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.empowered = true;
       this.enterState('phase-transition');
       this.scene.events.emit('boss-phase-two', this);
+    } else if (this.aiState === 'phase-transition') {
+      return true;
     } else {
       this.enterState('hurt');
     }
@@ -328,6 +332,10 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   private enterState(next: BossState): void {
     if (this.aiState === next) {
+      if (next === 'hurt') {
+        this.stateElapsed = 0;
+        this.play(ANIM.bossHurt);
+      }
       return;
     }
     this.aiState = next;
