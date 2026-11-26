@@ -5,6 +5,7 @@ import { Enemy, type EnemySpawn } from '../entities/Enemy';
 import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
 import { Boss } from '../entities/Boss';
+import { PauseMenu } from '../ui/PauseMenu';
 
 interface PlatformDef {
   readonly x: number;
@@ -47,6 +48,7 @@ export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private hud!: Hud;
+  private pauseMenu!: PauseMenu;
   private background!: Phaser.GameObjects.Image;
   private atmosphere!: Phaser.GameObjects.Rectangle;
   private activeRegion = -1;
@@ -90,6 +92,7 @@ export class GameScene extends Phaser.Scene {
     this.createEnemies();
 
     this.hud = new Hud(this);
+    this.pauseMenu = new PauseMenu(this);
     this.createDeathOverlay();
     this.bindInput();
 
@@ -122,6 +125,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    if (this.pauseMenu?.isOpen) return;
     const delta = Math.min(deltaMs, 50);
     this.player.updatePlayer(this.readInput(), delta);
 

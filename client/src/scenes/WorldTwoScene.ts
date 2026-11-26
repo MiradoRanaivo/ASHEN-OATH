@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../config/GameConfig';
 import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
+import { PauseMenu } from '../ui/PauseMenu';
 
 const TILE = 16;
 const GROUND_SEGMENT = 16;
@@ -36,6 +37,7 @@ export class WorldTwoScene extends Phaser.Scene {
   private player!: Player;
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private hud!: Hud;
+  private pauseMenu!: PauseMenu;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyLeft!: Phaser.Input.Keyboard.Key;
@@ -77,6 +79,7 @@ export class WorldTwoScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.platformGroup);
 
     this.hud = new Hud(this);
+    this.pauseMenu = new PauseMenu(this);
     this.hud.setRegion('Terres maudites');
     this.bindInput();
 
@@ -86,6 +89,7 @@ export class WorldTwoScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    if (this.pauseMenu?.isOpen) return;
     const delta = Math.min(deltaMs, 50);
     this.player.updatePlayer(this.readInput(), delta);
     this.hud.update(this.player.hp, this.player.stamina, this.player.riposteReady);
