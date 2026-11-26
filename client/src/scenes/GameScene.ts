@@ -27,11 +27,17 @@ const REGIONS = [
   { name: 'Trône du silence', backgroundTint: 0xaecbf0, atmosphere: 0x14283e, atmosphereAlpha: 0.24, ground: 0x526576, edge: 0xb1cadb, side: 0x283644 },
 ] as const;
 
+/**
+ * Parcours de plateformes du Monde 1.
+ * Les centres sont volontairement espacés : aucune plateforme ne se chevauche.
+ * Les hauteurs alternent entre une marche basse et une terrasse plus élevée
+ * pour créer un rythme de saut lisible sans bloquer la progression.
+ */
 const PLATFORMS: readonly PlatformDef[] = [
-  { x: 700, surface: 218, width: 140 },
-  { x: 1060, surface: 230, width: 160 },
-  { x: 660, surface: 186, width: 90 },
-  { x: 1000, surface: 190, width: 90 },
+  { x: 500, surface: 218, width: 112 },
+  { x: 690, surface: 190, width: 112 },
+  { x: 960, surface: 218, width: 128 },
+  { x: 1150, surface: 190, width: 112 },
 ];
 
 const ENEMIES: readonly EnemySpawn[] = [
@@ -475,10 +481,28 @@ export class GameScene extends Phaser.Scene {
       this.createPlatformSurface(left, platform.surface, width);
 
       if (platform.surface < VIEW.groundY - 4) {
-        const top = platform.surface + PLATFORM_HEIGHT;
-        const pillarWidth = Math.min(width, 2 * BLOCK);
-        const pillarLeft = left + Math.floor((width - pillarWidth) / 2 / BLOCK) * BLOCK;
-        this.addBlocks('block-wall', pillarLeft, top, pillarWidth, VIEW.groundY - top, DEPTH.platform - 1);
+        // Sous-face pleine : la plateforme devient une avancée de terrain
+        // rocheuse plutôt qu'une dalle flottant sur un pilier isolé.
+        const undersideTop = platform.surface + PLATFORM_HEIGHT;
+        const undersideHeight = VIEW.groundY - undersideTop;
+        this.addBlocks(
+          'block-wall',
+          left,
+          undersideTop,
+          width,
+          undersideHeight,
+          DEPTH.platform - 1,
+        );
+
+        // Ombre discrète sous le rebord pour détacher la pierre du fond.
+        this.add.rectangle(
+          left + width / 2,
+          undersideTop + 2,
+          width - 4,
+          2,
+          0x17141b,
+          0.72,
+        ).setDepth(DEPTH.platform);
       }
     }
   }
