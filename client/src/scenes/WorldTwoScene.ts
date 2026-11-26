@@ -328,7 +328,7 @@ export class WorldTwoScene extends Phaser.Scene {
       { x: 150, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow2_1', scale: 0.92, depthOffset: -0.1 },
       { x: 470, atlas: 'world2-undead-atlas', frame: 'ruin_shadow1_1', scale: 0.82 },
       { x: 790, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow1_1', scale: 0.88, depthOffset: -0.1 },
-      { x: 1110, atlas: 'world2-cursed-atlas', frame: 'ruins_shadow2_1', scale: 0.82 },
+      { x: 1110, atlas: 'world2-undead-atlas', frame: 'ruin_shadow2_1', scale: 0.82 },
       { x: 1450, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow3_1', scale: 0.9, depthOffset: -0.1 },
       { x: 1770, atlas: 'world2-undead-atlas', frame: 'ruin_shadow2_1', scale: 0.84 },
       { x: 1990, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow3_1', scale: 0.82 },
