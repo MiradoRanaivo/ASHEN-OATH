@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 import { BOSS_AI, COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
 
 /**
- * HUD Dark Ages : panneaux et bordures du pack Hypnobius, avec barres
- * dynamiques dessinées par Phaser. Les éléments restent ancrés à l'écran.
+ * HUD compact inspiré des Souls : cadre bronze discret, sceau du chevalier,
+ * jauges fines et lisibles. Tous les éléments restent fixes à la caméra.
  */
 export class Hud {
   private readonly scene: Phaser.Scene;
   private readonly bars: Phaser.GameObjects.Graphics;
+  private readonly crest: Phaser.GameObjects.Graphics;
   private readonly riposteLabel: Phaser.GameObjects.Text;
   private readonly bossBars: Phaser.GameObjects.Graphics;
   private readonly bossName: Phaser.GameObjects.Text;
@@ -38,50 +39,59 @@ export class Hud {
         if (!texture.has(name)) texture.add(name, 0, x, y, width, height);
       }
 
-      this.panel = scene.add.image(8, 7, 'dark-ages-ui', 'hud-panel')
-        .setOrigin(0).setScale(0.68).setScrollFactor(0).setDepth(DEPTH.hud);
+      // Le cadre est volontairement réduit : il ne masque plus le décor.
+      this.panel = scene.add.image(6, 5, 'dark-ages-ui', 'hud-panel')
+        .setOrigin(0).setScale(0.49).setScrollFactor(0).setDepth(DEPTH.hud);
+
       this.bossPanel = scene.add.image(VIEW.width / 2, 7, 'dark-ages-ui', 'gold-bar')
-        .setOrigin(0.5, 0).setScale(1.35, 0.62).setScrollFactor(0).setDepth(DEPTH.hud);
+        .setOrigin(0.5, 0).setScale(1.25, 0.58)
+        .setScrollFactor(0).setDepth(DEPTH.hud);
     }
 
-    scene.add.text(17, 13, 'ASHEN OATH', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '8px',
-      color: '#e5d3a5',
-      stroke: '#211b20',
-      strokeThickness: 1,
-    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.2);
+    // Petit sceau circulaire à la place d'un portrait fictif.
+    this.crest = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.25);
+    this.drawCrest();
 
-    this.regionLabel = scene.add.text(18, 24, 'CRYPTE OUBLIÉE', {
+    scene.add.text(22, 10, 'ASHEN OATH', {
       fontFamily: 'Georgia, serif',
-      fontSize: '4.5px',
-      color: '#b6a58b',
-    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.2);
-
-    this.bars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.3);
-
-    this.riposteLabel = scene.add.text(VIEW.width / 2, VIEW.height - 15, '✦ RIPOSTE DISPONIBLE ✦', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '6px',
-      color: '#f0d78a',
-      stroke: '#211b20',
+      fontSize: '6.5px',
+      color: '#e2d0a8',
+      stroke: '#17151b',
       strokeThickness: 2,
-    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(DEPTH.hud + 1).setVisible(false);
+    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.3);
 
-    scene.add.text(VIEW.width - 15, VIEW.height - 8, 'Q/D  ·  ESPACE  ·  J/K  ·  L  ·  I', {
+    this.regionLabel = scene.add.text(22, 18, 'CRYPTE OUBLIÉE', {
       fontFamily: 'Georgia, serif',
-      fontSize: '4.5px',
-      color: '#d2c4aa',
-      stroke: '#17151d',
+      fontSize: '4px',
+      color: '#a99b82',
+      stroke: '#17151b',
+      strokeThickness: 1,
+    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.3);
+
+    this.bars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.35);
+
+    this.riposteLabel = scene.add.text(10, VIEW.height - 10, '✦ RIPOSTE', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '5px',
+      color: '#d7bd78',
+      stroke: '#17151b',
+      strokeThickness: 2,
+    }).setOrigin(0, 1).setScrollFactor(0).setDepth(DEPTH.hud + 1).setVisible(false);
+
+    scene.add.text(VIEW.width - 8, VIEW.height - 7, 'Q/D · ESPACE · J/K · L · I', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '4px',
+      color: '#a99b82',
+      stroke: '#17151b',
       strokeThickness: 2,
     }).setOrigin(1, 1).setScrollFactor(0).setDepth(DEPTH.hud + 0.5);
 
     this.bossBars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.5);
-    this.bossName = scene.add.text(VIEW.width / 2, 11, '', {
+    this.bossName = scene.add.text(VIEW.width / 2, 10, '', {
       fontFamily: 'Georgia, serif',
-      fontSize: '6px',
-      color: '#f0d9a8',
-      stroke: '#211b20',
+      fontSize: '5.5px',
+      color: '#dfc99b',
+      stroke: '#17151b',
       strokeThickness: 2,
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH.hud + 1);
 
@@ -107,12 +117,13 @@ export class Hud {
     this.bossBars.clear();
     if (this.bossVisible) {
       const width = 76;
-      this.bossBars.fillStyle(0x211b20, 0.95);
-      this.bossBars.fillRect(VIEW.width / 2 - width / 2, 22, width, 4);
-      this.bossBars.fillStyle(COLORS.hpLoss, 1);
-      this.bossBars.fillRect(VIEW.width / 2 - width / 2 + 1, 23, width - 2, 2);
-      this.bossBars.fillStyle(0xb68b50, 1);
-      this.bossBars.fillRect(VIEW.width / 2 - width / 2 + 1, 23, (width - 2) * this.bossRatio, 2);
+      const x = VIEW.width / 2 - width / 2;
+      this.bossBars.fillStyle(0x100e13, 0.96);
+      this.bossBars.fillRect(x - 1, 21, width + 2, 4);
+      this.bossBars.fillStyle(0x54252a, 1);
+      this.bossBars.fillRect(x, 22, width, 2);
+      this.bossBars.fillStyle(0x9f3438, 1);
+      this.bossBars.fillRect(x, 22, width * this.bossRatio, 2);
     }
   }
 
@@ -123,28 +134,47 @@ export class Hud {
     }
   }
 
+  private drawCrest(): void {
+    this.crest.clear();
+    this.crest.fillStyle(0x100f14, 0.96);
+    this.crest.fillCircle(13, 27, 5.5);
+    this.crest.lineStyle(1, 0xb18a4e, 1);
+    this.crest.strokeCircle(13, 27, 5.5);
+    this.crest.lineStyle(1, 0xd6c08c, 1);
+    this.crest.lineBetween(13, 23, 13, 31);
+    this.crest.lineBetween(10, 26, 16, 26);
+    this.crest.fillStyle(0xd6c08c, 1);
+    this.crest.fillTriangle(13, 22, 11, 25, 15, 25);
+  }
+
   private draw(hp: number, stamina: number): void {
     this.lastHp = hp;
     this.lastStamina = stamina;
 
-    const x = 18;
-    const width = 46;
+    const x = 22;
+    const width = 25;
     const hpRatio = Phaser.Math.Clamp(hp / PLAYER.maxHp, 0, 1);
     const staminaRatio = Phaser.Math.Clamp(stamina / PLAYER.maxStamina, 0, 1);
 
     this.bars.clear();
-    this.bars.fillStyle(0x211b20, 0.96);
-    this.bars.fillRect(x - 1, 34, width + 2, 7);
-    this.bars.fillRect(x - 1, 44, width + 2, 5);
 
-    this.bars.fillStyle(COLORS.hpLoss, 1);
-    this.bars.fillRect(x, 35, width, 4);
-    this.bars.fillStyle(0xb43b42, 1);
-    this.bars.fillRect(x, 35, width * hpRatio, 4);
+    // Bord sombre et filet bronze, sans effet néon.
+    this.bars.fillStyle(0x100e13, 1);
+    this.bars.fillRect(x - 1, 26, width + 2, 5);
+    this.bars.lineStyle(0.5, 0x786044, 0.9);
+    this.bars.strokeRect(x - 1, 26, width + 2, 5);
+    this.bars.fillStyle(0x4b2025, 1);
+    this.bars.fillRect(x, 27, width, 3);
+    this.bars.fillStyle(0x9e343a, 1);
+    this.bars.fillRect(x, 27, width * hpRatio, 3);
 
-    this.bars.fillStyle(COLORS.staminaLoss, 1);
-    this.bars.fillRect(x, 45, width, 2);
-    this.bars.fillStyle(0xd8b85f, 1);
-    this.bars.fillRect(x, 45, width * staminaRatio, 2);
+    this.bars.fillStyle(0x100e13, 1);
+    this.bars.fillRect(x - 1, 34, width + 2, 4);
+    this.bars.lineStyle(0.5, 0x786044, 0.8);
+    this.bars.strokeRect(x - 1, 34, width + 2, 4);
+    this.bars.fillStyle(0x49401e, 1);
+    this.bars.fillRect(x, 35, width, 2);
+    this.bars.fillStyle(0xb99a4e, 1);
+    this.bars.fillRect(x, 35, width * staminaRatio, 2);
   }
 }
