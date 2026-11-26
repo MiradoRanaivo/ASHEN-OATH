@@ -334,12 +334,12 @@ export class WorldTwoScene extends Phaser.Scene {
       { x: 1990, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow3_1', scale: 0.82 },
 
       // Débris minéraux discrets : aucune chair suspendue ni cristal lumineux.
-      { x: 315, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.62 },
-      { x: 655, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.72 },
-      { x: 965, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.66 },
-      { x: 1290, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.64 },
-      { x: 1620, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.7 },
-      { x: 1900, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.66 },
+      { x: 315, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.62 },
+      { x: 655, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.72 },
+      { x: 965, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.66 },
+      { x: 1290, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.64 },
+      { x: 1620, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.7 },
+      { x: 1900, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.66 },
     ];
 
     for (const prop of props) {
