@@ -90,6 +90,7 @@ export class GameScene extends Phaser.Scene {
     this.createBlockTextures();
     this.createBackdrop();
     this.createPlatforms();
+    this.createGroundDetails();
     this.createBossArena();
 
     this.player = new Player(this, SPAWN_POINT.x, SPAWN_POINT.y);
@@ -271,6 +272,76 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDisplaySize(BOSS_AI.magicRange, BOSS_AI.magicHeight)
       .setAlpha(0.78 + Math.sin(time / 55) * 0.18);
+  }
+
+  /**
+   * Détails de sol pour la première région : éclats de pierre, fissures et
+   * petits débris de tombe. Décor uniquement : aucune hitbox ajoutée.
+   */
+  private createGroundDetails(): void {
+    const cryptEnd = REGION_WIDTH;
+    let seed = 7419;
+    const random = (min: number, max: number): number => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return min + (seed / 0xffffffff) * (max - min);
+    };
+
+    // Éclats de pierre irréguliers répartis sans couvrir le chemin du joueur.
+    for (let i = 0; i < 34; i++) {
+      const x = random(24, cryptEnd - 18);
+      const y = VIEW.groundY - random(3, 13);
+      const w = random(3, 9);
+      const h = random(2, 5);
+      const stone = this.add.graphics().setDepth(DEPTH.prop + 0.8);
+      stone.fillStyle(i % 3 === 0 ? 0x74666a : 0x39323a, 0.92);
+      stone.fillPoints([
+        new Phaser.Geom.Point(x - w, y),
+        new Phaser.Geom.Point(x - w / 2, y - h),
+        new Phaser.Geom.Point(x + w * 0.65, y - h * 0.7),
+        new Phaser.Geom.Point(x + w, y),
+        new Phaser.Geom.Point(x + w * 0.2, y + 1),
+      ], true);
+      stone.lineStyle(1, 0x211d24, 0.9);
+      stone.strokePoints([
+        new Phaser.Geom.Point(x - w, y),
+        new Phaser.Geom.Point(x - w / 2, y - h),
+        new Phaser.Geom.Point(x + w * 0.65, y - h * 0.7),
+        new Phaser.Geom.Point(x + w, y),
+      ], false);
+    }
+
+    // Fissures fines au pied des murs, orientées de manière irrégulière.
+    for (let i = 0; i < 11; i++) {
+      const x = random(32, cryptEnd - 30);
+      const y = VIEW.groundY - random(1, 3);
+      const crack = this.add.graphics().setDepth(DEPTH.prop + 0.9);
+      crack.lineStyle(1, 0x211d24, 0.9);
+      crack.beginPath();
+      crack.moveTo(x, y);
+      crack.lineTo(x + random(3, 8), y - random(2, 4));
+      crack.lineTo(x + random(7, 13), y - random(1, 3));
+      crack.lineTo(x + random(13, 17), y - random(3, 5));
+      crack.strokePath();
+    }
+
+    // Fragments de pierre plus gros, placés près des bords pour préserver la lisibilité.
+    for (const x of [82, 276, 432]) {
+      const rubble = this.add.graphics().setDepth(DEPTH.prop + 1);
+      rubble.fillStyle(0x51464b, 1);
+      rubble.fillPoints([
+        new Phaser.Geom.Point(x - 9, VIEW.groundY),
+        new Phaser.Geom.Point(x - 7, VIEW.groundY - 7),
+        new Phaser.Geom.Point(x - 1, VIEW.groundY - 11),
+        new Phaser.Geom.Point(x + 6, VIEW.groundY - 8),
+        new Phaser.Geom.Point(x + 10, VIEW.groundY),
+      ], true);
+      rubble.lineStyle(1, 0x82716d, 0.8);
+      rubble.strokePoints([
+        new Phaser.Geom.Point(x - 7, VIEW.groundY - 7),
+        new Phaser.Geom.Point(x - 1, VIEW.groundY - 11),
+        new Phaser.Geom.Point(x + 6, VIEW.groundY - 8),
+      ], false);
+    }
   }
 
   private createBossArena(): void {
