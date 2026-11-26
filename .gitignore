@@ -7,3 +7,8 @@ assets/external_selected/repo/
 .env
 .env.*
 .DS_Store
+
+# sources lourdes, hors du dépôt
+*.psd
+/*.zip
+

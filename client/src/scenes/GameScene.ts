@@ -13,6 +13,7 @@ interface PlatformDef {
 }
 
 const PLATFORM_HEIGHT = 16;
+const BLOCK = 16;
 const REGION_WIDTH = VIEW.worldWidth / 4;
 const BOSS_ARENA_LEFT = 1360;
 const BOSS_ARENA_RIGHT = 2000;
@@ -49,6 +50,7 @@ export class GameScene extends Phaser.Scene {
   private background!: Phaser.GameObjects.Image;
   private atmosphere!: Phaser.GameObjects.Rectangle;
   private activeRegion = -1;
+  private blockSprites: Phaser.GameObjects.TileSprite[] = [];
   private deathOverlay!: Phaser.GameObjects.Container;
   private respawnPending = false;
   private boss!: Boss;
@@ -77,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, VIEW.worldWidth, VIEW.height);
     this.cameras.main.setBackgroundColor(COLORS.background);
 
+    this.createBlockTextures();
     this.createBackdrop();
     this.createPlatforms();
     this.createBossArena();
@@ -130,10 +133,13 @@ export class GameScene extends Phaser.Scene {
     this.updateBossAttackVisuals(_time);
     this.updateBossArena();
 
+    this.updateBackdropParallax();
+
     const region = Math.min(3, Math.floor(this.player.x / REGION_WIDTH));
     if (region !== this.activeRegion) {
       this.activeRegion = region;
       this.background.setTint(REGIONS[region].backgroundTint);
+      for (const block of this.blockSprites) block.setTint(REGIONS[region].backgroundTint);
       this.atmosphere.setFillStyle(REGIONS[region].atmosphere, REGIONS[region].atmosphereAlpha);
     }
     this.hud.setRegion(REGIONS[region].name);
@@ -262,22 +268,28 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(arenaCenter, 210, BOSS_ARENA_RIGHT - BOSS_ARENA_LEFT, 80, 0x11101a, 0.28)
       .setDepth(DEPTH.backdrop + 3);
 
-    this.add.rectangle(BOSS_ARENA_LEFT + 68, 226, 24, 64, 0x352641)
-      .setDepth(DEPTH.prop);
-    this.add.rectangle(BOSS_ARENA_RIGHT - 68, 226, 24, 64, 0x352641)
-      .setDepth(DEPTH.prop);
-    this.add.rectangle(arenaCenter, 214, 96, 16, 0x5a443d)
-      .setDepth(DEPTH.prop);
-    this.add.rectangle(arenaCenter, 198, 72, 32, 0x2d2532)
-      .setDepth(DEPTH.prop);
+    // Piliers posés sur le sol : 2 blocs de large, 4 de haut, chapiteau en dalle.
+    const pillarHeight = 4 * BLOCK;
+    for (const x of [BOSS_ARENA_LEFT + 64, BOSS_ARENA_RIGHT - 64]) {
+      const left = x - BLOCK;
+      const top = VIEW.groundY - pillarHeight;
+      this.addBlocks('block-wall', left, top + BLOCK, 2 * BLOCK, pillarHeight - BLOCK, DEPTH.prop);
+      this.addBlocks('block-top', left, top, 2 * BLOCK, BLOCK, DEPTH.prop + 0.5);
+    }
 
-    for (const x of [BOSS_ARENA_LEFT + 68, BOSS_ARENA_RIGHT - 68]) {
-      const brazierBase = this.add.rectangle(x, 250, 30, 12, 0x30262d)
-        .setDepth(DEPTH.prop);
-      this.add.circle(x, 240, 7, 0xd4883e)
+    // Autel en deux marches, posé sur le sol.
+    this.addBlocks('block-top', arenaCenter - 3 * BLOCK, VIEW.groundY - BLOCK, 6 * BLOCK, BLOCK, DEPTH.prop);
+    this.addBlocks('block-top', arenaCenter - 2 * BLOCK, VIEW.groundY - 2 * BLOCK, 4 * BLOCK, BLOCK, DEPTH.prop);
+
+    // Braziers au pied de chaque pilier, côté intérieur de l'arène.
+    for (const [x, dir] of [[BOSS_ARENA_LEFT + 64, 1], [BOSS_ARENA_RIGHT - 64, -1]] as const) {
+      const bx = x + dir * 36;
+      const brazierBase = this.add.rectangle(bx, VIEW.groundY - 4, 20, 8, 0x30262d)
+        .setDepth(DEPTH.prop + 0.5);
+      brazierBase.setStrokeStyle(1, 0x70543a);
+      this.add.circle(bx, VIEW.groundY - 14, 7, 0xd4883e)
         .setDepth(DEPTH.effect)
         .setAlpha(0.95);
-      brazierBase.setStrokeStyle(1, 0x70543a);
     }
 
     this.bossArenaGate = this.add.rectangle(BOSS_ARENA_LEFT, 214, 14, 72, 0x35232f)
@@ -288,8 +300,10 @@ export class GameScene extends Phaser.Scene {
     this.bossArenaGateBody = this.bossArenaGate.body as Phaser.Physics.Arcade.StaticBody;
     this.bossArenaGateBody.enable = false;
 
-    this.add.rectangle(BOSS_ARENA_RIGHT, 214, 14, 88, 0x19151f)
-      .setDepth(DEPTH.prop);
+    // Mur de fond de l'arène.
+    const wallHeight = 5 * BLOCK + 8;
+    this.addBlocks('block-wall', BOSS_ARENA_RIGHT - BLOCK / 2, VIEW.groundY - wallHeight + BLOCK, BLOCK, wallHeight - BLOCK, DEPTH.prop);
+    this.addBlocks('block-top', BOSS_ARENA_RIGHT - BLOCK / 2, VIEW.groundY - wallHeight, BLOCK, BLOCK, DEPTH.prop + 0.5);
   }
 
   private updateBossArena(): void {
@@ -308,24 +322,78 @@ export class GameScene extends Phaser.Scene {
     this.platformGroup.add(ledge);
     (ledge.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
 
-    const right = left + width;
-    let segmentLeft = left;
-    while (segmentLeft < right) {
-      const regionIndex = Math.min(3, Math.floor(segmentLeft / REGION_WIDTH));
-      const region = REGIONS[regionIndex];
-      const segmentRight = Math.min(right, (regionIndex + 1) * REGION_WIDTH);
-      const segmentWidth = segmentRight - segmentLeft;
-      const segmentX = segmentLeft + segmentWidth / 2;
+    this.addBlocks('block-top', left, surface, width, PLATFORM_HEIGHT, DEPTH.platform + 2);
+  }
 
-      this.add.rectangle(segmentX, surface + PLATFORM_HEIGHT / 2, segmentWidth + 0.5, PLATFORM_HEIGHT, region.side)
-        .setDepth(DEPTH.platform + 1);
-      this.add.rectangle(segmentX, surface + 2, segmentWidth + 0.5, 4, region.ground)
-        .setDepth(DEPTH.platform + 2);
-      this.add.rectangle(segmentX, surface + 0.5, segmentWidth + 0.5, 1, region.edge)
-        .setDepth(DEPTH.platform + 3);
+  /** Pose une zone de blocs 16x16 : le motif reste aligné sur la grille du monde. */
+  private addBlocks(
+    texture: 'block-top' | 'block-wall',
+    left: number,
+    top: number,
+    width: number,
+    height: number,
+    depth: number,
+  ): Phaser.GameObjects.TileSprite {
+    const sprite = this.add.tileSprite(left, top, width, height, texture)
+      .setOrigin(0, 0)
+      .setDepth(depth);
+    sprite.tilePositionX = left % BLOCK;
+    sprite.setTint(REGIONS[Math.max(0, this.activeRegion)].backgroundTint);
+    this.blockSprites.push(sprite);
+    return sprite;
+  }
 
-      segmentLeft = segmentRight;
-    }
+  /** Textures de blocs générées une seule fois : briques de pierre 16x16 (mur) et dalle avec rebord (dessus). */
+  private createBlockTextures(): void {
+    const draw = (key: string, withLip: boolean): void => {
+      if (this.textures.exists(key)) return;
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      const mortar = 0x1f1a22;
+      const brick = [0x3f3641, 0x453b46, 0x3a313c, 0x483e49];
+      let seed = withLip ? 7 : 3;
+      const rand = (): number => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      };
+      g.fillStyle(mortar, 1);
+      g.fillRect(0, 0, BLOCK, BLOCK);
+      const courses = [
+        { y: 0, offset: 0 },
+        { y: 8, offset: 4 },
+      ];
+      for (const course of courses) {
+        for (let bx = course.offset - 8; bx < BLOCK; bx += 8) {
+          const x0 = Math.max(0, bx) ;
+          const x1 = Math.min(BLOCK, bx + 8);
+          if (x1 - x0 <= 1) continue;
+          g.fillStyle(brick[Math.floor(rand() * brick.length)], 1);
+          g.fillRect(x0 + (bx < 0 ? 0 : 1), course.y + 1, x1 - x0 - 1, 6);
+          g.fillStyle(0x594d58, 1);
+          g.fillRect(x0 + (bx < 0 ? 0 : 1), course.y + 1, x1 - x0 - 1, 1);
+        }
+      }
+      if (withLip) {
+        g.fillStyle(0x9b8873, 1);
+        g.fillRect(0, 0, BLOCK, 1);
+        g.fillStyle(0x6f6159, 1);
+        g.fillRect(0, 1, BLOCK, 2);
+        g.fillStyle(0x4b414a, 1);
+        g.fillRect(0, 3, BLOCK, 1);
+      }
+      g.generateTexture(key, BLOCK, BLOCK);
+      g.destroy();
+    };
+    draw('block-wall', false);
+    draw('block-top', true);
+  }
+
+  /** Le fond défile sur toute sa largeur pendant que la caméra traverse le monde. */
+  private updateBackdropParallax(): void {
+    const camera = this.cameras.main;
+    const range = VIEW.worldWidth - VIEW.width;
+    const progress = Phaser.Math.Clamp(camera.scrollX / range, 0, 1);
+    const extra = Math.max(0, this.background.displayWidth - VIEW.width);
+    this.background.x = Math.round(this.background.displayWidth / 2 - progress * extra);
   }
 
   private resolveEnemyAttacks(): void {
@@ -398,13 +466,15 @@ export class GameScene extends Phaser.Scene {
     this.createPlatformSurface(0, VIEW.groundY, VIEW.worldWidth);
 
     for (const platform of PLATFORMS) {
-      this.createPlatformSurface(platform.x - platform.width / 2, platform.surface, platform.width);
+      const left = Math.round((platform.x - platform.width / 2) / BLOCK) * BLOCK;
+      const width = Math.max(BLOCK, Math.round(platform.width / BLOCK) * BLOCK);
+      this.createPlatformSurface(left, platform.surface, width);
 
       if (platform.surface < VIEW.groundY - 4) {
-        const pillarHeight = VIEW.groundY - (platform.surface + PLATFORM_HEIGHT);
-        this.add.rectangle(platform.x, platform.surface + PLATFORM_HEIGHT + pillarHeight / 2, Math.min(platform.width, 52), pillarHeight, 0x1c181f)
-          .setAlpha(0.95)
-          .setDepth(DEPTH.platform - 1);
+        const top = platform.surface + PLATFORM_HEIGHT;
+        const pillarWidth = Math.min(width, 2 * BLOCK);
+        const pillarLeft = left + Math.floor((width - pillarWidth) / 2 / BLOCK) * BLOCK;
+        this.addBlocks('block-wall', pillarLeft, top, pillarWidth, VIEW.groundY - top, DEPTH.platform - 1);
       }
     }
   }
