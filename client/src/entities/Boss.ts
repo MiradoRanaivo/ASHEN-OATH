@@ -345,10 +345,11 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   private stopMovement(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
+    // Laisse le drag physique freiner le boss progressivement, sans amortissement
+    // multiplié à chaque frame (qui rendait le mouvement dépendant du FPS).
     body.setAccelerationX(0);
-    // Freinage progressif : évite l'arrêt instantané d'un grand boss lourd.
-    body.setVelocityX(body.velocity.x * 0.72);
-    if (Math.abs(body.velocity.x) < 3) body.setVelocityX(0);
+    body.setDragX(760);
+    if (Math.abs(body.velocity.x) < 5) body.setVelocityX(0);
   }
 
   private enterState(next: BossState): void {
