@@ -91,6 +91,7 @@ export class GameScene extends Phaser.Scene {
     this.createBackdrop();
     this.createPlatforms();
     this.createGroundDetails();
+    this.createCryptProps();
     this.createBossArena();
 
     this.player = new Player(this, SPAWN_POINT.x, SPAWN_POINT.y);
@@ -342,6 +343,137 @@ export class GameScene extends Phaser.Scene {
         new Phaser.Geom.Point(x + 6, VIEW.groundY - 8),
       ], false);
     }
+  }
+
+
+  /**
+   * Habillage vertical de la Crypte oubliée.
+   * Les formes restent derrière le joueur et ne créent aucune collision.
+   */
+  private createCryptProps(): void {
+    const cryptDepth = DEPTH.prop + 0.2;
+    const stoneDark = 0x28232b;
+    const stoneMid = 0x51464d;
+    const stoneLight = 0x88766d;
+    const mortar = 0x17141b;
+
+    // Deux colonnes ruinées, volontairement asymétriques.
+    const drawBrokenColumn = (x: number, height: number, brokenRight: boolean): void => {
+      const y = VIEW.groundY;
+      const g = this.add.graphics().setDepth(cryptDepth);
+      g.fillStyle(mortar, 0.95);
+      g.fillRect(x - 13, y - height, 27, height);
+      g.fillStyle(stoneDark, 1);
+      g.fillRect(x - 11, y - height + 3, 22, height - 3);
+      g.fillStyle(stoneMid, 1);
+      g.fillRect(x - 9, y - height + 5, 6, height - 8);
+      g.fillStyle(stoneLight, 0.75);
+      g.fillRect(x - 9, y - height + 5, 2, height - 10);
+
+      // Joints horizontaux irréguliers.
+      for (let row = 1; row < Math.floor(height / 16); row++) {
+        const yy = y - height + row * 16;
+        g.fillStyle(mortar, 0.9);
+        g.fillRect(x - 11, yy, 22, 2);
+        g.fillStyle(stoneLight, 0.22);
+        g.fillRect(x - 9, yy + 2, 18, 1);
+      }
+
+      // Chapiteau ébréché et base massive.
+      g.fillStyle(stoneDark, 1);
+      g.fillPoints([
+        new Phaser.Geom.Point(x - 17, y - height + 4),
+        new Phaser.Geom.Point(x - 14, y - height - 5),
+        new Phaser.Geom.Point(x + (brokenRight ? 8 : 14), y - height - 5),
+        new Phaser.Geom.Point(x + (brokenRight ? 13 : 17), y - height + 3),
+      ], true);
+      g.fillStyle(stoneLight, 0.65);
+      g.fillRect(x - 14, y - height - 4, brokenRight ? 17 : 25, 2);
+      g.fillStyle(stoneDark, 1);
+      g.fillRect(x - 17, y - 10, 34, 10);
+      g.fillStyle(stoneMid, 1);
+      g.fillRect(x - 15, y - 9, 30, 3);
+
+      if (brokenRight) {
+        g.fillStyle(stoneDark, 1);
+        g.fillPoints([
+          new Phaser.Geom.Point(x + 5, y - height - 5),
+          new Phaser.Geom.Point(x + 13, y - height - 12),
+          new Phaser.Geom.Point(x + 17, y - height - 4),
+        ], true);
+      }
+    };
+
+    drawBrokenColumn(112, 78, true);
+    drawBrokenColumn(452, 106, false);
+
+    // Sarcophage bas, posé au sol et dessiné derrière la trajectoire du joueur.
+    const tomb = this.add.graphics().setDepth(cryptDepth + 0.15);
+    tomb.fillStyle(0x17141b, 0.9);
+    tomb.fillRect(232, VIEW.groundY - 25, 58, 25);
+    tomb.fillStyle(stoneDark, 1);
+    tomb.fillPoints([
+      new Phaser.Geom.Point(228, VIEW.groundY - 25),
+      new Phaser.Geom.Point(236, VIEW.groundY - 34),
+      new Phaser.Geom.Point(284, VIEW.groundY - 34),
+      new Phaser.Geom.Point(294, VIEW.groundY - 25),
+    ], true);
+    tomb.fillStyle(stoneMid, 1);
+    tomb.fillRect(237, VIEW.groundY - 23, 48, 19);
+    tomb.fillStyle(stoneLight, 0.7);
+    tomb.fillRect(239, VIEW.groundY - 32, 44, 3);
+    tomb.lineStyle(1, 0x211d24, 1);
+    tomb.strokeRect(244, VIEW.groundY - 19, 34, 12);
+    tomb.lineBetween(261, VIEW.groundY - 18, 261, VIEW.groundY - 8);
+
+    // Chaînes suspendues : maillons carrés espacés pour rester lisibles en pixel art.
+    const drawChain = (x: number, top: number, length: number): void => {
+      const chain = this.add.graphics().setDepth(cryptDepth + 0.1);
+      chain.lineStyle(2, 0x28232b, 1);
+      chain.lineBetween(x, top, x, top + length);
+      for (let y = top + 3; y < top + length; y += 8) {
+        chain.lineStyle(2, 0x88766d, 0.9);
+        chain.strokeRect(x - 2, y, 4, 5);
+        chain.lineStyle(1, 0x17141b, 0.9);
+        chain.lineBetween(x - 1, y + 1, x + 1, y + 1);
+      }
+      chain.fillStyle(0x17141b, 1);
+      chain.fillRect(x - 4, top - 2, 8, 3);
+    };
+    drawChain(205, 20, 62);
+    drawChain(382, 8, 86);
+
+    // Appliques murales et flammes discrètes. Les lueurs sont animées sans lumière coûteuse.
+    const createTorch = (x: number, y: number): void => {
+      const mount = this.add.graphics().setDepth(cryptDepth + 0.25);
+      mount.fillStyle(0x211b22, 1);
+      mount.fillRect(x - 5, y + 5, 10, 8);
+      mount.fillStyle(0x796044, 1);
+      mount.fillRect(x - 3, y, 6, 9);
+      mount.fillStyle(0x352832, 1);
+      mount.fillRect(x - 2, y - 5, 4, 7);
+
+      const glow = this.add.circle(x, y - 7, 13, 0xc36b32, 0.12)
+        .setDepth(DEPTH.effect - 0.5);
+      const flame = this.add.ellipse(x, y - 8, 6, 11, 0xf0a34c, 0.9)
+        .setDepth(DEPTH.effect - 0.2);
+      const core = this.add.ellipse(x, y - 6, 2, 6, 0xffdf91, 0.95)
+        .setDepth(DEPTH.effect - 0.1);
+
+      this.tweens.add({
+        targets: [glow, flame, core],
+        alpha: { from: 0.72, to: 1 },
+        scaleX: { from: 0.86, to: 1.12 },
+        scaleY: { from: 0.92, to: 1.08 },
+        duration: 420,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        delay: x % 170,
+      });
+    };
+    createTorch(176, 126);
+    createTorch(414, 104);
   }
 
   private createBossArena(): void {
