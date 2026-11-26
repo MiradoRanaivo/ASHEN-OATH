@@ -1,4 +1,4 @@
-﻿import Phaser from 'phaser';
+import Phaser from 'phaser';
 import { ANIM } from '../data/Animations';
 import { BOSS_AI } from '../config/GameConfig';
 import type { Player } from './Player';
@@ -24,6 +24,9 @@ export interface BossAttackBox {
   readonly box: Phaser.Geom.Rectangle;
   readonly damage: number;
 }
+
+const VERTICAL_MELEE_TOLERANCE = 68;
+const VERTICAL_RANGED_TOLERANCE = 100;
 
 export class Boss extends Phaser.Physics.Arcade.Sprite {
   readonly maxHp = 360;
@@ -51,6 +54,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(42, 82);
+    body.setDragX(520);
+    body.setMaxVelocity(BOSS_AI.empowerApproachSpeed, 600);
     this.alignBodyToFrame();
     body.setCollideWorldBounds(true);
 
@@ -75,9 +80,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   getAttackBoxes(): readonly BossAttackBox[] {
     if (this.aiState === 'attack') {
-      if (this.stateElapsed < BOSS_AI.attackActiveFromMs || this.stateElapsed > BOSS_AI.attackActiveToMs) {
-        return [];
-      }
+      if (this.stateElapsed < BOSS_AI.attackActiveFromMs || this.stateElapsed > BOSS_AI.attackActiveToMs) return [];
       return [{
         kind: 'melee',
         damage: BOSS_AI.attackDamage,
@@ -91,9 +94,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.aiState === 'beam') {
-      if (this.stateElapsed < BOSS_AI.beamActiveFromMs || this.stateElapsed > BOSS_AI.beamActiveToMs) {
-        return [];
-      }
+      if (this.stateElapsed < BOSS_AI.beamActiveFromMs || this.stateElapsed > BOSS_AI.beamActiveToMs) return [];
       return [{
         kind: 'beam',
         damage: BOSS_AI.beamDamage,
@@ -107,9 +108,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.aiState === 'magic') {
-      if (this.stateElapsed < BOSS_AI.magicActiveFromMs || this.stateElapsed > BOSS_AI.magicActiveToMs) {
-        return [];
-      }
+      if (this.stateElapsed < BOSS_AI.magicActiveFromMs || this.stateElapsed > BOSS_AI.magicActiveToMs) return [];
       return [{
         kind: 'magic',
         damage: BOSS_AI.magicDamage,
@@ -130,28 +129,33 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.enterState('dead');
       return;
     }
+    if (player.isDead) {
+      this.stopMovement();
+      if (this.aiState !== 'idle') this.enterState('idle');
+      return;
+    }
 
     this.stateElapsed += deltaMs;
     const distance = Math.abs(player.x - this.x);
+    const verticalDistance = Math.abs(player.y - this.y);
+    const canUseMelee = verticalDistance <= VERTICAL_MELEE_TOLERANCE;
+    const canUseRanged = verticalDistance <= VERTICAL_RANGED_TOLERANCE;
 
     if (this.aiState === 'hurt') {
-      this.setVelocityX(0);
+      this.stopMovement();
       if (this.stateElapsed >= BOSS_AI.hurtStunMs) {
-        if (distance > BOSS_AI.loseRange) {
-          this.enterState('idle');
-        } else if (distance <= BOSS_AI.attackDistance) {
-          this.enterState('recovery');
-        } else {
-          this.enterState('approach');
-        }
+        if (distance > BOSS_AI.loseRange) this.enterState('idle');
+        else if (distance <= BOSS_AI.attackDistance && canUseMelee) this.enterState('recovery');
+        else this.enterState('approach');
       }
       return;
     }
 
     if (this.aiState === 'phase-transition') {
-      this.setVelocityX(0);
+      this.stopMovement();
       if (this.stateElapsed >= BOSS_AI.phaseTransitionMs) {
-        this.enterState(distance <= BOSS_AI.attackDistance ? 'attack-preparation' : 'approach');
+        if (distance <= BOSS_AI.attackDistance && canUseMelee) this.enterState('attack-preparation');
+        else this.enterState('approach');
       }
       return;
     }
@@ -159,19 +163,16 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     if (this.aiState === 'dead') return;
 
     if (this.aiState === 'idle' || this.aiState === 'detect') {
-      this.setVelocityX(0);
-      if (distance <= BOSS_AI.detectRange) {
-        this.facePlayer(player);
-        if (this.aiState !== 'detect') {
-          this.enterState('detect');
-        }
-        if (distance <= BOSS_AI.attackDistance) {
-          this.enterState('attack-preparation');
-        } else {
-          this.enterState('approach');
-        }
+      this.stopMovement();
+      if (distance > BOSS_AI.detectRange) {
+        if (this.aiState !== 'idle') this.enterState('idle');
+        return;
+      }
+      this.facePlayer(player);
+      if (distance <= BOSS_AI.attackDistance && canUseMelee) {
+        this.enterNextAttack(distance);
       } else {
-        this.enterState('idle');
+        this.enterState('approach');
       }
       return;
     }
@@ -182,99 +183,88 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         return;
       }
       this.facePlayer(player);
-      if (distance <= BOSS_AI.attackDistance) {
+
+      if (distance <= BOSS_AI.attackDistance && canUseMelee) {
         this.enterNextAttack(distance);
         return;
       }
-      const direction = player.x >= this.x ? 1 : -1;
-      this.setVelocityX(direction * (this.empowered ? BOSS_AI.empowerApproachSpeed : BOSS_AI.approachSpeed));
-      if (this.empowered && distance <= BOSS_AI.beamRange) {
+      if (this.empowered && distance <= BOSS_AI.beamRange && canUseRanged && distance > BOSS_AI.attackDistance) {
         this.enterNextPhaseTwoRangedAttack();
+        return;
       }
+
+      const direction = player.x >= this.x ? 1 : -1;
+      const speed = this.empowered ? BOSS_AI.empowerApproachSpeed : BOSS_AI.approachSpeed;
+      if (distance < 24) this.stopMovement();
+      else this.moveToward(direction, speed);
       return;
     }
 
     if (this.aiState === 'attack-preparation') {
-      this.setVelocityX(0);
+      this.stopMovement();
       this.facePlayer(player);
-      if (this.stateElapsed >= BOSS_AI.preparationMs) {
-        this.enterState('attack');
-      }
+      if (this.stateElapsed >= BOSS_AI.preparationMs) this.enterState('attack');
       return;
     }
 
     if (this.aiState === 'attack') {
-      this.setVelocityX(0);
-      this.facePlayer(player);
-      if (this.stateElapsed >= BOSS_AI.attackDurationMs) {
-        this.enterState('recovery');
-      }
+      // La direction est verrouillée au début de l'attaque : le coup ne suit pas le joueur.
+      this.stopMovement();
+      if (this.stateElapsed >= BOSS_AI.attackDurationMs) this.enterState('recovery');
       return;
     }
 
     if (this.aiState === 'beam-preparation') {
-      this.setVelocityX(0);
+      this.stopMovement();
       this.facePlayer(player);
-      if (this.stateElapsed >= BOSS_AI.beamPreparationMs) {
-        this.enterState('beam');
-      }
+      if (this.stateElapsed >= BOSS_AI.beamPreparationMs) this.enterState('beam');
       return;
     }
 
     if (this.aiState === 'beam') {
-      this.setVelocityX(0);
-      this.facePlayer(player);
-      if (this.stateElapsed >= BOSS_AI.beamDurationMs) {
-        this.enterState('recovery');
-      }
+      // Le rayon garde la direction annoncée pendant sa préparation.
+      this.stopMovement();
+      if (this.stateElapsed >= BOSS_AI.beamDurationMs) this.enterState('recovery');
       return;
     }
 
     if (this.aiState === 'magic-preparation') {
-      this.setVelocityX(0);
-      if (this.stateElapsed >= BOSS_AI.magicPreparationMs) {
-        this.enterState('magic');
-      }
+      this.stopMovement();
+      if (this.stateElapsed >= BOSS_AI.magicPreparationMs) this.enterState('magic');
       return;
     }
 
     if (this.aiState === 'magic') {
-      this.setVelocityX(0);
-      if (this.stateElapsed >= BOSS_AI.magicDurationMs) {
-        this.enterState('recovery');
-      }
+      this.stopMovement();
+      if (this.stateElapsed >= BOSS_AI.magicDurationMs) this.enterState('recovery');
       return;
     }
 
     if (this.aiState === 'recovery') {
-      this.setVelocityX(0);
-      if (this.stateElapsed >= BOSS_AI.recoveryMs) {
-        if (distance > BOSS_AI.loseRange) {
-          this.enterState('idle');
-        } else if (distance <= BOSS_AI.attackDistance) {
-          this.enterNextAttack(distance);
-        } else if (this.empowered) {
-          if (distance <= BOSS_AI.beamRange) {
-            this.enterNextPhaseTwoRangedAttack();
-            return;
-          }
-          this.enterState('approach');
-        } else {
-          this.enterState('approach');
-        }
+      this.stopMovement();
+      if (this.stateElapsed < BOSS_AI.recoveryMs) return;
+
+      if (distance > BOSS_AI.loseRange) {
+        this.enterState('idle');
+      } else if (distance <= BOSS_AI.attackDistance && canUseMelee) {
+        this.enterNextAttack(distance);
+      } else if (this.empowered && distance <= BOSS_AI.beamRange && canUseRanged) {
+        this.enterNextPhaseTwoRangedAttack();
+      } else {
+        this.enterState('approach');
       }
     }
   }
 
   receiveHit(attackId: number, damage: number, knockback: number, fromX: number): boolean {
-    if (this.isDead || this.lastHitAttackId === attackId) {
-      return false;
-    }
+    if (this.isDead || this.lastHitAttackId === attackId) return false;
 
     this.lastHitAttackId = attackId;
     this.hp = Math.max(0, this.hp - damage);
     this.setTintFill(0xffffff);
-    this.scene.time.delayedCall(70, () => this.clearTint());
+    this.scene.time.delayedCall(70, () => {
+      if (this.active) this.clearTint();
+    });
 
     const direction = fromX < this.x ? 1 : -1;
     this.setVelocity(direction * knockback * 0.12, -15);
@@ -285,16 +275,12 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.enterState('dead');
       this.scene.events.emit('boss-died', this);
       this.setVelocity(0, 0);
-      if (this.body) {
-        (this.body as Phaser.Physics.Arcade.Body).enable = false;
-      }
+      if (this.body) (this.body as Phaser.Physics.Arcade.Body).enable = false;
     } else if (entersPhaseTwo) {
       this.empowered = true;
       this.enterState('phase-transition');
       this.scene.events.emit('boss-phase-two', this);
-    } else if (this.aiState === 'phase-transition') {
-      return true;
-    } else {
+    } else if (this.aiState !== 'phase-transition') {
       this.enterState('hurt');
     }
 
@@ -326,8 +312,23 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   private facePlayer(player: Player): void {
-    this.facing = player.x >= this.x ? 1 : -1;
+    const nextFacing = player.x >= this.x ? 1 : -1;
+    if (nextFacing === this.facing) return;
+    this.facing = nextFacing;
     this.setFlipX(this.facing < 0);
+    this.alignBodyToFrame();
+  }
+
+  private moveToward(direction: number, speed: number): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setMaxVelocity(speed, 600);
+    body.setAccelerationX(direction * 560);
+  }
+
+  private stopMovement(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setAccelerationX(0);
+    body.setVelocityX(0);
   }
 
   private enterState(next: BossState): void {
@@ -338,34 +339,41 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       }
       return;
     }
+
     this.aiState = next;
     this.stateElapsed = 0;
 
     if (next === 'idle' || next === 'detect') {
-      this.setVelocityX(0);
+      this.stopMovement();
       this.play(ANIM.bossIdle, true);
     } else if (next === 'approach') {
       this.play(this.empowered ? ANIM.bossRun : ANIM.bossWalk, true);
     } else if (next === 'attack-preparation') {
+      this.stopMovement();
       this.play(ANIM.bossCharge);
     } else if (next === 'attack') {
+      this.stopMovement();
       this.play(ANIM.bossAttack);
     } else if (next === 'beam-preparation') {
+      this.stopMovement();
       this.play(ANIM.bossBeamCharge);
     } else if (next === 'beam') {
+      this.stopMovement();
       this.play(ANIM.bossBeam);
     } else if (next === 'magic-preparation') {
+      this.stopMovement();
       this.play(ANIM.bossMagicCharge);
     } else if (next === 'magic') {
+      this.stopMovement();
       this.play(ANIM.bossMagic);
     } else if (next === 'phase-transition') {
       this.setVelocity(0, 0);
       this.play(ANIM.bossCharge);
     } else if (next === 'recovery') {
-      this.setVelocityX(0);
+      this.stopMovement();
       this.play(ANIM.bossIdle, true);
     } else if (next === 'hurt') {
-      this.setVelocityX(0);
+      this.stopMovement();
       this.play(ANIM.bossHurt);
     } else if (next === 'dead') {
       this.setVelocity(0, 0);
@@ -399,9 +407,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   private alignBodyToFrame(): void {
     const body = this.body as Phaser.Physics.Arcade.Body | null;
-    if (!body) {
-      return;
-    }
+    if (!body) return;
+
     const centeredOffsetX = (this.frame.width - body.width) / 2;
     const offsetX = this.facing < 0
       ? this.frame.width - centeredOffsetX - body.width
