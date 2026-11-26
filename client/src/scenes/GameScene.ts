@@ -36,8 +36,8 @@ const REGIONS = [
 const PLATFORMS: readonly PlatformDef[] = [
   { x: 500, surface: 218, width: 112 },
   { x: 690, surface: 190, width: 112 },
-  { x: 960, surface: 218, width: 128 },
-  { x: 1150, surface: 190, width: 112 },
+  { x: 940, surface: 218, width: 112 },
+  { x: 1120, surface: 190, width: 112 },
 ];
 
 const ENEMIES: readonly EnemySpawn[] = [
