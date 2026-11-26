@@ -4,20 +4,27 @@ import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
 
 const TILE = 16;
+const GROUND_SEGMENT = 16;
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
 const FLOOR_TOP = VIEW.groundY;
 const WORLD_PLATFORMS = [
-  { x: 190, y: 210, width: 128 },
-  { x: 370, y: 190, width: 144 },
-  { x: 550, y: 205, width: 128 },
-  { x: 735, y: 180, width: 144 },
-  { x: 920, y: 200, width: 144 },
-  { x: 1110, y: 175, width: 128 },
-  { x: 1300, y: 195, width: 144 },
-  { x: 1490, y: 178, width: 128 },
-  { x: 1680, y: 205, width: 144 },
-  { x: 1880, y: 185, width: 144 },
+  { x: 190, y: 222, width: 104 },
+  { x: 335, y: 207, width: 112 },
+  { x: 485, y: 220, width: 104 },
+  { x: 635, y: 198, width: 112 },
+  { x: 785, y: 216, width: 104 },
+  { x: 935, y: 194, width: 112 },
+  { x: 1085, y: 212, width: 104 },
+  { x: 1235, y: 190, width: 112 },
+  { x: 1385, y: 210, width: 104 },
+  { x: 1535, y: 188, width: 112 },
+  { x: 1685, y: 210, width: 104 },
+  { x: 1835, y: 192, width: 112 },
+  { x: 1980, y: 214, width: 96 },
 ] as const;
+
+const GROUND_RELIEF = [0, 0, -2, -4, -2, 0, 2, 0, -2, -4, -2, 0, 2, 0, -2, -4] as const;
+const groundYAt = (x: number): number => FLOOR_TOP + GROUND_RELIEF[Math.floor(Math.max(0, x) / 128) % GROUND_RELIEF.length];
 
 /**
  * Monde 2 — niveau latéral construit en tuiles de décor dessinées.
@@ -137,91 +144,192 @@ export class WorldTwoScene extends Phaser.Scene {
       .setDepth(DEPTH.backdrop + 1);
   }
 
-  /** Sol et plateformes dessinés en blocs pixel-art cohérents, avec collision. */
+  /** Terrain irrégulier avec collisions segmentées, relief et détails intégrés. */
   private createPlatforms(): void {
     this.platformGroup = this.physics.add.staticGroup();
-
-    this.addSolidSurface(VIEW.worldWidth / 2, FLOOR_TOP, VIEW.worldWidth, 64);
+    this.createNaturalGround();
 
     for (const platform of WORLD_PLATFORMS) {
-      this.addSolidSurface(platform.x, platform.y, platform.width, 28);
+      this.addRockLedge(platform.x, platform.y, platform.width);
     }
 
     this.addWorldProps();
   }
 
-  private addSolidSurface(centerX: number, topY: number, width: number, height: number): void {
-    const left = Math.round(centerX - width / 2);
-    const top = Math.round(topY);
-    const bodyObject = this.add.rectangle(centerX, top + height / 2, width, height, 0x000000, 0);
-    bodyObject.setDepth(DEPTH.platform);
-    this.platformGroup.add(bodyObject);
-    (bodyObject.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+  private createNaturalGround(): void {
+    const ground = this.add.graphics().setDepth(DEPTH.platform - 0.2);
+    const topPoints: Phaser.Geom.Point[] = [{ x: 0, y: groundYAt(0) }];
 
-    const art = this.add.graphics().setDepth(DEPTH.platform - 0.1);
-    const bottom = top + height;
-    art.fillStyle(0x34333a, 1);
-    art.fillRect(left, top + 4, width, height - 4);
-    art.fillStyle(0x55504d, 1);
-    art.fillRect(left, top, width, 5);
-    art.fillStyle(0x777064, 1);
-    art.fillRect(left, top, width, 2);
-    art.fillStyle(0x24242c, 1);
-    art.fillRect(left, top + 9, width, 3);
+    for (let x = 0; x <= VIEW.worldWidth; x += GROUND_SEGMENT) {
+      const top = groundYAt(x);
+      const bodyHeight = VIEW.height - top + 18;
+      const collider = this.add.rectangle(
+        x + GROUND_SEGMENT / 2,
+        top + bodyHeight / 2,
+        GROUND_SEGMENT + 1,
+        bodyHeight,
+        0x000000,
+        0,
+      );
+      this.platformGroup.add(collider);
+      (collider.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+      topPoints.push(new Phaser.Geom.Point(x, top));
+    }
+    topPoints.push(new Phaser.Geom.Point(VIEW.worldWidth, VIEW.height + 24));
+    topPoints.push(new Phaser.Geom.Point(0, VIEW.height + 24));
 
-    // Joints, éclats et fissures déterministes : aucun index de spritesheet aléatoire.
-    for (let x = left, column = 0; x < left + width; x += TILE, column += 1) {
-      const variation = (column * 17 + Math.floor(top / TILE) * 11) % 7;
-      const blockY = top + 12 + (variation % 3) * 5;
-      art.fillStyle(variation % 2 ? 0x49464a : 0x3d3b42, 1);
-      art.fillRect(x + 1, blockY, TILE - 2, 5);
-      art.fillStyle(0x24242b, 1);
-      art.fillRect(x + TILE - 1, top + 8, 1, Math.max(5, height - 10));
-      if (variation === 1 || variation === 4) {
-        art.fillStyle(0x827968, 1);
-        art.fillRect(x + 3, top + 2, 3, 1);
-      }
-      if (variation === 2 || variation === 5) {
-        art.fillStyle(0x1c2023, 1);
-        art.fillRect(x + 5, blockY + 5, 5, 1);
+    ground.fillStyle(0x24232b, 1);
+    ground.fillPoints(topPoints, true);
+    ground.fillStyle(0x393740, 1);
+    ground.fillPoints([
+      { x: 0, y: 252 }, { x: 240, y: 251 }, { x: 430, y: 254 },
+      { x: 680, y: 250 }, { x: 920, y: 253 }, { x: 1180, y: 250 },
+      { x: 1440, y: 254 }, { x: 1700, y: 251 }, { x: 2080, y: 253 },
+      { x: 2080, y: 270 }, { x: 0, y: 270 },
+    ], true);
+
+    // Strates rocheuses horizontales, interrompues pour éviter l'effet de briques.
+    for (let row = 0; row < 3; row += 1) {
+      const y = 258 + row * 5;
+      ground.lineStyle(1, row === 0 ? 0x4a4549 : 0x302d35, 0.9);
+      for (let x = 0; x < VIEW.worldWidth; x += 64) {
+        const skip = ((x / 64 + row * 3) % 5) === 0;
+        if (!skip) ground.lineBetween(x + 4, y, x + 42 + ((x / 64) % 3) * 5, y + (row % 2));
       }
     }
 
-    // Racines et petites stalactites sous les plateformes aériennes.
-    if (top < FLOOR_TOP) {
-      art.fillStyle(0x24232b, 1);
-      for (let x = left + 12; x < left + width - 5; x += 37) {
-        const length = 4 + ((x + top) % 9);
-        art.fillTriangle(x, bottom - 1, x + 5, bottom - 1, x + 2, bottom + length);
+    // Bord supérieur érodé et petits éclats minéraux.
+    for (let x = 8; x < VIEW.worldWidth; x += 24) {
+      const y = groundYAt(x);
+      const variation = (x * 13) % 9;
+      ground.fillStyle(variation % 2 ? 0x777064 : 0x625d58, 0.95);
+      ground.fillRect(x, y, 5 + (variation % 4), 1);
+      ground.fillStyle(0x171820, 0.9);
+      ground.fillTriangle(x + 7, y + 3, x + 12, y + 3, x + 9, y + 7 + (variation % 4));
+      if (variation === 2 || variation === 6) {
+        ground.lineStyle(1, 0x171820, 0.9);
+        ground.lineBetween(x + 3, y + 8, x + 7, y + 12);
+        ground.lineBetween(x + 7, y + 12, x + 5, y + 17);
+      }
+    }
+
+    this.addGroundDetails();
+  }
+
+  /** Pierres, fissures et herbes mortes posées sur la surface réelle du terrain. */
+  private addGroundDetails(): void {
+    const detail = this.add.graphics().setDepth(DEPTH.platform + 0.15);
+    for (let x = 34; x < VIEW.worldWidth - 20; x += 47) {
+      const y = groundYAt(x);
+      const seed = (x * 37) % 17;
+      if (seed % 3 === 0) {
+        detail.fillStyle(0x625c58, 1);
+        detail.fillTriangle(x, y - 1, x + 7, y - 2, x + 4, y - 5);
+        detail.fillStyle(0x34323a, 1);
+        detail.fillTriangle(x + 8, y, x + 14, y - 1, x + 11, y - 4);
+      } else if (seed % 3 === 1) {
+        detail.lineStyle(1, 0x171820, 1);
+        detail.lineBetween(x, y + 5, x + 4, y + 9);
+        detail.lineBetween(x + 4, y + 9, x + 8, y + 7);
+      } else {
+        detail.lineStyle(1, 0x343c35, 1);
+        detail.lineBetween(x, y - 1, x - 2, y - 8);
+        detail.lineBetween(x - 2, y - 8, x - 6, y - 11);
+        detail.lineBetween(x - 1, y - 5, x + 4, y - 10);
       }
     }
   }
 
-  /** Props issus des atlas existants : arbres brisés, tombes, rochers et racines. */
+  /** Ledge rocheux : silhouette ébréchée, strates, fissures et racines sous la dalle. */
+  private addRockLedge(centerX: number, topY: number, width: number): void {
+    const left = Math.round(centerX - width / 2);
+    const right = left + width;
+    const bottom = topY + 30;
+    const collider = this.add.rectangle(centerX, topY + 12, width, 20, 0x000000, 0);
+    collider.setDepth(DEPTH.platform);
+    this.platformGroup.add(collider);
+    (collider.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+
+    const rock = this.add.graphics().setDepth(DEPTH.platform - 0.05);
+    const silhouette = [
+      { x: left, y: topY + 7 }, { x: left + 7, y: topY + 3 },
+      { x: left + 18, y: topY + 2 }, { x: left + 29, y: topY + 4 },
+      { x: left + 42, y: topY }, { x: left + 57, y: topY + 2 },
+      { x: left + 71, y: topY + 1 }, { x: right - 17, y: topY + 4 },
+      { x: right - 6, y: topY + 2 }, { x: right, y: topY + 7 },
+      { x: right - 3, y: bottom - 4 }, { x: right - 15, y: bottom },
+      { x: left + 20, y: bottom - 2 }, { x: left + 8, y: bottom - 7 },
+    ];
+    rock.fillStyle(0x292831, 1);
+    rock.fillPoints(silhouette, true);
+    rock.fillStyle(0x55504e, 1);
+    rock.fillPoints([
+      { x: left, y: topY + 7 }, { x: left + 7, y: topY + 3 },
+      { x: left + 18, y: topY + 2 }, { x: left + 29, y: topY + 4 },
+      { x: left + 42, y: topY }, { x: left + 57, y: topY + 2 },
+      { x: left + 71, y: topY + 1 }, { x: right - 17, y: topY + 4 },
+      { x: right - 6, y: topY + 2 }, { x: right, y: topY + 7 },
+      { x: right - 3, y: topY + 13 }, { x: left + 5, y: topY + 13 },
+    ], true);
+    rock.fillStyle(0x81786a, 1);
+    rock.fillPoints([
+      { x: left + 7, y: topY + 3 }, { x: left + 18, y: topY + 2 },
+      { x: left + 29, y: topY + 4 }, { x: left + 42, y: topY },
+      { x: left + 57, y: topY + 2 }, { x: left + 71, y: topY + 1 },
+      { x: left + 71, y: topY + 4 }, { x: left + 42, y: topY + 4 },
+      { x: left + 18, y: topY + 6 }, { x: left + 7, y: topY + 6 },
+    ], true);
+
+    // Couches rocheuses et fractures non répétitives.
+    for (let x = left + 8, i = 0; x < right - 10; x += 23, i += 1) {
+      const y = topY + 15 + (i % 2) * 5;
+      rock.lineStyle(1, i % 2 ? 0x1c1d25 : 0x71685e, 0.9);
+      rock.lineBetween(x, y, Math.min(right - 4, x + 12 + (i % 3) * 3), y - 2);
+      rock.fillStyle(i % 2 ? 0x3c3940 : 0x48434a, 1);
+      rock.fillTriangle(x + 2, y + 4, x + 11, y + 3, x + 7, y + 8);
+      if (i % 3 === 0) {
+        rock.lineStyle(1, 0x171820, 1);
+        rock.lineBetween(x + 4, topY + 7, x + 8, topY + 12);
+        rock.lineBetween(x + 8, topY + 12, x + 6, topY + 16);
+      }
+    }
+
+    // Racines courtes et pointes de roche sous les surplombs.
+    for (let x = left + 15, i = 0; x < right - 8; x += 31, i += 1) {
+      const length = 5 + (i % 3) * 4;
+      rock.fillStyle(0x211f28, 1);
+      rock.fillTriangle(x, bottom - 4, x + 5, bottom - 4, x + 2, bottom + length);
+      if (i % 2 === 0) {
+        rock.lineStyle(1, 0x34352f, 1);
+        rock.lineBetween(x + 2, topY + 5, x - 3, topY + 15);
+      }
+    }
+
+    // Quelques touffes de mousse morte, très discrètes sur le rebord.
+    rock.lineStyle(1, 0x59604a, 1);
+    rock.lineBetween(left + 20, topY + 2, left + 18, topY - 3);
+    rock.lineBetween(left + 20, topY + 2, left + 24, topY - 2);
+    rock.lineBetween(right - 27, topY + 3, right - 29, topY - 2);
+  }
+
+  /** Props compacts, ancrés sur le sol (les grandes plantes 256px sont écartées des plateformes). */
   private addWorldProps(): void {
-    const props: Array<{ x: number; y: number; atlas: string; frame: string; scale?: number }> = [
-      { x: 170, y: FLOOR_TOP, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow2_1', scale: 1.1 },
-      { x: 430, y: FLOOR_TOP, atlas: 'world2-undead-atlas', frame: 'grave_shadow2_1' },
-      { x: 690, y: FLOOR_TOP, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 1.2 },
-      { x: 930, y: FLOOR_TOP, atlas: 'world2-cursed-atlas', frame: 'spike_plant_shadow2_1' },
-      { x: 1190, y: FLOOR_TOP, atlas: 'world2-undead-atlas', frame: 'bones_shadow2_1' },
-      { x: 1480, y: FLOOR_TOP, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow2_1', scale: 1.25 },
-      { x: 1770, y: FLOOR_TOP, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1' },
-      { x: 1990, y: FLOOR_TOP, atlas: 'world2-undead-atlas', frame: 'grave_shadow2_1' },
+    const props: Array<{ x: number; atlas: string; frame: string; scale: number }> = [
+      { x: 270, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.8 },
+      { x: 610, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.85 },
+      { x: 980, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.9 },
+      { x: 1320, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.8 },
+      { x: 1710, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.85 },
+      { x: 1950, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.8 },
     ];
 
     for (const prop of props) {
       if (!this.textures.exists(prop.atlas) || !this.textures.get(prop.atlas).has(prop.frame)) continue;
-      this.add.image(prop.x, prop.y, prop.atlas, prop.frame)
+      this.add.image(prop.x, groundYAt(prop.x), prop.atlas, prop.frame)
         .setOrigin(0.5, 1)
-        .setScale(prop.scale ?? 1)
+        .setScale(prop.scale)
         .setDepth(DEPTH.prop);
     }
-
-    const animated = this.add.sprite(570, FLOOR_TOP, 'world2-undead-anim1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
-    animated.play('world2-undead-anim1-loop');
   }
 
   private readInput(): PlayerInput {
