@@ -3,7 +3,7 @@ import { ANIM, ENEMY_ATTACK_DURATION } from '../data/Animations';
 import { CLIP, ENEMY, frameWindowMs, type EnemyKind, type EnemyProfile } from '../config/GameConfig';
 import type { Player } from './Player';
 
-type EnemyState = 'patrol' | 'chase' | 'attack' | 'stunned' | 'dead';
+type EnemyState = 'patrol' | 'patrol-wait' | 'chase' | 'attack' | 'stunned' | 'dead';
 
 export interface EnemySpawn {
   readonly kind: EnemyKind;
@@ -13,6 +13,12 @@ export interface EnemySpawn {
   readonly patrolMax: number;
 }
 
+const AGGRO_MEMORY_MS = 1800;
+const LEASH_PADDING = 84;
+const PATROL_PAUSE_MS = 360;
+const VERTICAL_ATTACK_TOLERANCE = 48;
+const VERTICAL_SIGHT_TOLERANCE = 76;
+
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
   readonly profile: EnemyProfile;
@@ -21,10 +27,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private stateName: EnemyState = 'patrol';
   private stateElapsed = 0;
   private facing = -1;
-  private patrolMin: number;
-  private patrolMax: number;
+  private readonly patrolMin: number;
+  private readonly patrolMax: number;
   private nextAttackAt = 0;
+  private lastSeenPlayerAt = Number.NEGATIVE_INFINITY;
   private lastHitAttackId = -1;
+  private patrolWaitUntil = 0;
   private readonly spawn: EnemySpawn;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
@@ -46,6 +54,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     body.setSize(this.profile.body.width, this.profile.body.height);
     body.setOffset(this.profile.body.offsetX, this.profile.body.offsetY);
     body.setCollideWorldBounds(true);
+    body.setDragX(720);
+    body.setMaxVelocity(this.profile.chaseSpeed, 600);
 
     this.play(ANIM.enemyIdle(this.kind));
   }
@@ -59,13 +69,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   getAttackBox(): Phaser.Geom.Rectangle | null {
-    if (this.stateName !== 'attack') {
-      return null;
-    }
+    if (this.stateName !== 'attack') return null;
+
     const window = frameWindowMs(CLIP.enemyAttack, 3, 4);
-    if (this.stateElapsed < window.start || this.stateElapsed > window.end) {
-      return null;
-    }
+    if (this.stateElapsed < window.start || this.stateElapsed > window.end) return null;
+
     const range = this.profile.attackRange;
     return new Phaser.Geom.Rectangle(
       this.facing > 0 ? this.x + 4 : this.x - 4 - range,
@@ -77,13 +85,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   updateEnemy(player: Player, deltaMs: number): void {
     this.stateElapsed += deltaMs;
-
-    if (this.stateName === 'dead') {
-      return;
-    }
+    if (this.stateName === 'dead') return;
 
     if (this.stateName === 'stunned') {
-      this.setVelocityX(0);
+      this.stopHorizontalMovement();
       if (this.stateElapsed >= this.profile.stunMs) {
         this.stateName = 'patrol';
         this.stateElapsed = 0;
@@ -92,7 +97,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.stateName === 'attack') {
-      this.setVelocityX(0);
+      this.stopHorizontalMovement();
       if (this.stateElapsed >= ENEMY_ATTACK_DURATION) {
         this.stateName = 'patrol';
         this.stateElapsed = 0;
@@ -103,30 +108,44 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (player.isDead) {
+      this.lastSeenPlayerAt = Number.NEGATIVE_INFINITY;
       this.patrol(deltaMs);
       return;
     }
 
+    const now = this.scene.time.now;
     const dx = player.x - this.x;
     const dy = Math.abs(player.y - this.y);
+    const insideLeash = player.x >= this.patrolMin - LEASH_PADDING
+      && player.x <= this.patrolMax + LEASH_PADDING;
 
-    if (Math.abs(dx) <= this.profile.attackRange && dy < 42 && this.scene.time.now >= this.nextAttackAt) {
-      this.facing = dx >= 0 ? 1 : -1;
-      this.setFlipX(this.facing < 0);
+    if (Math.abs(dx) <= this.profile.detectRange && dy <= VERTICAL_SIGHT_TOLERANCE && insideLeash) {
+      this.lastSeenPlayerAt = now;
+    }
+
+    const hasTarget = now - this.lastSeenPlayerAt <= AGGRO_MEMORY_MS && insideLeash;
+
+    if (
+      hasTarget
+      && Math.abs(dx) <= this.profile.attackRange
+      && dy <= VERTICAL_ATTACK_TOLERANCE
+      && now >= this.nextAttackAt
+    ) {
+      this.face(dx);
       this.stateName = 'attack';
       this.stateElapsed = 0;
-      this.setVelocityX(0);
+      this.stopHorizontalMovement();
       this.play(ANIM.enemyAttack(this.kind));
       return;
     }
 
-    if (Math.abs(dx) <= this.profile.detectRange && dy < 60) {
+    if (hasTarget) {
       this.stateName = 'chase';
-      this.facing = dx >= 0 ? 1 : -1;
-      this.setFlipX(this.facing < 0);
-      this.setVelocityX(this.facing * this.profile.chaseSpeed);
+      this.face(dx);
+      this.moveHorizontally(this.facing, this.profile.chaseSpeed);
+      // Les packs d'ennemis du monde 1 ne contiennent pas de spritesheets de marche :
+      // on conserve leur animation native plutôt que d'inventer des frames.
       this.play(ANIM.enemyIdle(this.kind), true);
-      this.clampToPatrol();
       return;
     }
 
@@ -135,14 +154,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Applique une attaque du joueur. Renvoie true si le coup a porté. */
   receiveHit(attackId: number, damage: number, knockback: number, fromX: number): boolean {
-    if (this.stateName === 'dead' || this.lastHitAttackId === attackId) {
-      return false;
-    }
+    if (this.stateName === 'dead' || this.lastHitAttackId === attackId) return false;
+
     this.lastHitAttackId = attackId;
     this.hp = Math.max(0, this.hp - damage);
-
     this.setTintFill(0xffffff);
-    this.scene.time.delayedCall(70, () => this.clearTint());
+    this.scene.time.delayedCall(70, () => {
+      if (this.active) this.clearTint();
+    });
 
     if (this.hp <= 0) {
       this.die();
@@ -151,6 +170,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.stateName = 'stunned';
     this.stateElapsed = 0;
+    this.play(ANIM.enemyIdle(this.kind), true);
     this.setVelocity(fromX < this.x ? knockback : -knockback, -70);
     return true;
   }
@@ -161,41 +181,76 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.stateElapsed = 0;
     this.lastHitAttackId = -1;
     this.nextAttackAt = 0;
+    this.lastSeenPlayerAt = Number.NEGATIVE_INFINITY;
+    this.patrolWaitUntil = 0;
     this.facing = -1;
+    this.enableBody(true, this.spawn.x, this.spawn.y, true, true);
     this.setPosition(this.spawn.x, this.spawn.y);
     this.setVelocity(0, 0);
     this.clearTint();
     this.setAlpha(1);
-    this.setActive(true).setVisible(true);
+    this.setFlipX(true);
     this.play(ANIM.enemyIdle(this.kind), true);
   }
 
-  private patrol(deltaMs: number): void {
-    this.stateName = 'patrol';
+  private patrol(_deltaMs: number): void {
+    const now = this.scene.time.now;
+
+    if (this.stateName === 'patrol-wait') {
+      this.stopHorizontalMovement();
+      if (now < this.patrolWaitUntil) return;
+      this.stateName = 'patrol';
+      this.stateElapsed = 0;
+    }
+
     if (this.x <= this.patrolMin) {
-      this.facing = 1;
-    } else if (this.x >= this.patrolMax) {
-      this.facing = -1;
+      this.face(1);
+      this.beginPatrolPause(now);
+      return;
     }
-    this.setFlipX(this.facing < 0);
-    this.setVelocityX(this.facing * this.profile.speed);
+    if (this.x >= this.patrolMax) {
+      this.face(-1);
+      this.beginPatrolPause(now);
+      return;
+    }
+
+    this.stateName = 'patrol';
+    this.moveHorizontally(this.facing, this.profile.speed);
     this.play(ANIM.enemyIdle(this.kind), true);
-    void deltaMs;
   }
 
-  private clampToPatrol(): void {
+  private beginPatrolPause(now: number): void {
+    this.stateName = 'patrol-wait';
+    this.stateElapsed = 0;
+    this.patrolWaitUntil = now + PATROL_PAUSE_MS;
+    this.stopHorizontalMovement();
+    this.play(ANIM.enemyIdle(this.kind), true);
+  }
+
+  private face(dx: number): void {
+    if (dx === 0) return;
+    this.facing = dx > 0 ? 1 : -1;
+    this.setFlipX(this.facing < 0);
+  }
+
+  private moveHorizontally(direction: number, speed: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    if (this.x < this.patrolMin) {
-      body.x += this.patrolMin - this.x;
-    } else if (this.x > this.patrolMax) {
-      body.x -= this.x - this.patrolMax;
-    }
+    body.setMaxVelocity(speed, 600);
+    body.setAccelerationX(direction * 620);
+  }
+
+  private stopHorizontalMovement(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setAccelerationX(0);
+    body.setVelocityX(0);
   }
 
   private die(): void {
     this.stateName = 'dead';
     this.stateElapsed = 0;
     this.setVelocity(0, 0);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.enable = false;
     this.scene.events.emit('enemy-died', this);
     this.setAlpha(0.45);
     this.setTint(0x6a6a72);
