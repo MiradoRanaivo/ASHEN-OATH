@@ -312,23 +312,46 @@ export class WorldTwoScene extends Phaser.Scene {
     rock.lineBetween(right - 27, topY + 3, right - 29, topY - 2);
   }
 
-  /** Props compacts, ancrés sur le sol (les grandes plantes 256px sont écartées des plateformes). */
+  /** Décor thématique : arbres morts, ruines, ossements et pierres anciennes.
+   * Les plantes organiques/fantastiques trop exotiques et les objets lumineux
+   * sont volontairement exclus pour garder une identité de nécropole maudite.
+   */
   private addWorldProps(): void {
-    const props: Array<{ x: number; atlas: string; frame: string; scale: number }> = [
-      { x: 270, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.8 },
-      { x: 610, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.85 },
-      { x: 980, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.9 },
-      { x: 1320, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.8 },
-      { x: 1710, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.85 },
-      { x: 1950, atlas: 'world2-undead-atlas', frame: 'bones_shadow1_2', scale: 0.8 },
+    const props: Array<{
+      x: number;
+      atlas: string;
+      frame: string;
+      scale: number;
+      depthOffset?: number;
+    }> = [
+      // Silhouettes majeures, espacées pour ne pas encombrer la lecture du terrain.
+      { x: 150, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow2_1', scale: 0.92, depthOffset: -0.1 },
+      { x: 470, atlas: 'world2-undead-atlas', frame: 'ruin_shadow1_1', scale: 0.82 },
+      { x: 790, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow1_1', scale: 0.88, depthOffset: -0.1 },
+      { x: 1110, atlas: 'world2-cursed-atlas', frame: 'ruins_shadow2_1', scale: 0.82 },
+      { x: 1450, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow3_1', scale: 0.9, depthOffset: -0.1 },
+      { x: 1770, atlas: 'world2-undead-atlas', frame: 'ruin_shadow2_1', scale: 0.84 },
+      { x: 1990, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow3_1', scale: 0.82, depthOffset: -0.1 },
+
+      // Petits détails au pied des ruines : ossements, roches et cristaux ternis.
+      { x: 315, atlas: 'world2-cursed-atlas', frame: 'bones_shadow1_2', scale: 0.72 },
+      { x: 655, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.78 },
+      { x: 965, atlas: 'world2-undead-atlas', frame: 'dead_arm_shadow2_1', scale: 0.72 },
+      { x: 1290, atlas: 'world2-undead-atlas', frame: 'crystal_shadow2_1', scale: 0.68 },
+      { x: 1620, atlas: 'world2-cursed-atlas', frame: 'bones_shadow1_2', scale: 0.7 },
+      { x: 1900, atlas: 'world2-cursed-atlas', frame: 'rock3_shadow2_1', scale: 0.72 },
     ];
 
     for (const prop of props) {
-      if (!this.textures.exists(prop.atlas) || !this.textures.get(prop.atlas).has(prop.frame)) continue;
-      this.add.image(prop.x, groundYAt(prop.x), prop.atlas, prop.frame)
+      if (!this.textures.exists(prop.atlas) || !this.textures.get(prop.atlas).has(prop.frame)) {
+        continue;
+      }
+
+      const groundY = groundYAt(prop.x);
+      this.add.image(prop.x, groundY, prop.atlas, prop.frame)
         .setOrigin(0.5, 1)
         .setScale(prop.scale)
-        .setDepth(DEPTH.prop);
+        .setDepth(DEPTH.prop + (prop.depthOffset ?? 0));
     }
   }
 
