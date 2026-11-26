@@ -64,6 +64,7 @@ export class GameScene extends Phaser.Scene {
   private boss!: Boss;
   private bossBeamVisual!: Phaser.GameObjects.Image;
   private bossAoeVisual!: Phaser.GameObjects.Image;
+  private bossTelegraph!: Phaser.GameObjects.Graphics;
   private bossArenaGate!: Phaser.GameObjects.Rectangle;
   private bossArenaGateBody!: Phaser.Physics.Arcade.StaticBody;
   private bossArenaGateVisible = false;
@@ -121,6 +122,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDisplaySize(240, 110)
       .setVisible(false);
+    this.bossTelegraph = this.add.graphics().setDepth(DEPTH.effect - 0.25);
     this.physics.add.collider(this.boss, this.platformGroup);
     this.physics.add.collider(
       this.player,
@@ -257,6 +259,53 @@ export class GameScene extends Phaser.Scene {
 
   private updateBossAttackVisuals(time: number): void {
     const activeBoxes = this.boss.getAttackBoxes();
+    this.bossTelegraph.clear();
+
+    // Télégraphes au sol : la zone dangereuse est annoncée avant chaque attaque.
+    const direction = this.boss.flipX ? -1 : 1;
+    const bossX = this.boss.x;
+    const groundY = this.boss.y - 2;
+    const elapsed = this.boss.stateElapsedMs;
+
+    if (this.boss.stateName === 'attack-preparation') {
+      const pulse = 0.24 + Math.sin(time / 65) * 0.08;
+      this.bossTelegraph.fillStyle(0xe0a34d, pulse);
+      this.bossTelegraph.fillRect(
+        bossX + direction * 12 - (direction < 0 ? BOSS_AI.attackRange : 0),
+        groundY - 5,
+        BOSS_AI.attackRange,
+        7,
+      );
+      this.bossTelegraph.lineStyle(1, 0xf0c27b, 0.75);
+      this.bossTelegraph.strokeRect(
+        bossX + direction * 12 - (direction < 0 ? BOSS_AI.attackRange : 0),
+        groundY - 5,
+        BOSS_AI.attackRange,
+        7,
+      );
+    } else if (this.boss.stateName === 'beam-preparation') {
+      const progress = Phaser.Math.Clamp(elapsed / BOSS_AI.beamPreparationMs, 0, 1);
+      const width = BOSS_AI.beamRange * progress;
+      const startX = bossX + direction * 20;
+      this.bossTelegraph.fillStyle(0x8d6be8, 0.12 + progress * 0.12);
+      this.bossTelegraph.fillRect(direction > 0 ? startX : startX - width, groundY - 42, width, 38);
+      this.bossTelegraph.lineStyle(2, 0xb59aff, 0.35 + progress * 0.45);
+      this.bossTelegraph.lineBetween(startX, groundY - 23, startX + direction * width, groundY - 23);
+    } else if (this.boss.stateName === 'magic-preparation') {
+      const progress = Phaser.Math.Clamp(elapsed / BOSS_AI.magicPreparationMs, 0, 1);
+      const radiusX = (BOSS_AI.magicRange / 2) * progress;
+      const radiusY = (BOSS_AI.magicHeight / 2) * progress;
+      this.bossTelegraph.fillStyle(0x8b5de0, 0.1 + progress * 0.12);
+      this.bossTelegraph.fillEllipse(bossX, groundY - radiusY, radiusX * 2, radiusY * 2);
+      this.bossTelegraph.lineStyle(2, 0xc0a1ff, 0.35 + progress * 0.5);
+      this.bossTelegraph.strokeEllipse(bossX, groundY - radiusY, radiusX * 2, radiusY * 2);
+    } else if (this.boss.stateName === 'phase-transition') {
+      const pulse = 0.2 + Math.sin(time / 80) * 0.08;
+      this.bossTelegraph.fillStyle(0x8b5de0, pulse);
+      this.bossTelegraph.fillEllipse(bossX, groundY - 5, 100, 14);
+      this.bossTelegraph.lineStyle(2, 0xc0a1ff, 0.7);
+      this.bossTelegraph.strokeEllipse(bossX, groundY - 5, 100, 14);
+    }
     const beamActive = activeBoxes.some((attack) => attack.kind === 'beam');
     const facingLeft = this.boss.flipX;
     this.bossBeamVisual

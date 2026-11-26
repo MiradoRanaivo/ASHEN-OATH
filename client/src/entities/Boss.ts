@@ -74,6 +74,10 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     return this.aiState;
   }
 
+  get stateElapsedMs(): number {
+    return this.stateElapsed;
+  }
+
   get phase(): 1 | 2 {
     return this.empowered ? 2 : 1;
   }
