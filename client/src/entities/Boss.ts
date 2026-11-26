@@ -49,12 +49,12 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5, 1);
     this.setDepth(3);
-    this.setScale(1);
+    this.setScale(1.12);
     this.setFlipX(true);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(42, 82);
-    body.setDragX(520);
+    body.setSize(48, 94);
+    body.setDragX(760);
     body.setMaxVelocity(BOSS_AI.empowerApproachSpeed, 600);
     this.alignBodyToFrame();
     body.setCollideWorldBounds(true);
@@ -212,8 +212,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.aiState === 'attack') {
-      // La direction est verrouillée au début de l'attaque : le coup ne suit pas le joueur.
-      this.stopMovement();
+      // Ruée courte et lisible au milieu du coup : le boss engage son poids, sans suivre le joueur.
+      if (this.stateElapsed >= 180 && this.stateElapsed <= 410) {
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        body.setVelocityX(this.facing * (this.empowered ? 112 : 82));
+      } else {
+        this.stopMovement();
+      }
       if (this.stateElapsed >= BOSS_AI.attackDurationMs) this.enterState('recovery');
       return;
     }
@@ -282,6 +287,10 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       if (this.body) (this.body as Phaser.Physics.Arcade.Body).enable = false;
     } else if (entersPhaseTwo) {
       this.empowered = true;
+      this.setScale(1.2);
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setSize(52, 100);
+      this.alignBodyToFrame();
       this.enterState('phase-transition');
       this.scene.events.emit('boss-phase-two', this);
     } else if (this.aiState !== 'phase-transition') {
@@ -310,6 +319,10 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.setActive(true).setVisible(true);
     this.facing = -1;
     this.empowered = false;
+    this.setScale(1.12);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(48, 94);
+    this.alignBodyToFrame();
     this.attackPatternIndex = 0;
     this.setFlipX(true);
     this.enterState('idle');
@@ -326,13 +339,16 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   private moveToward(direction: number, speed: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setMaxVelocity(speed, 600);
-    body.setAccelerationX(direction * 560);
+    body.setAccelerationX(direction * (this.empowered ? 680 : 520));
+    body.setDragX(760);
   }
 
   private stopMovement(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAccelerationX(0);
-    body.setVelocityX(0);
+    // Freinage progressif : évite l'arrêt instantané d'un grand boss lourd.
+    body.setVelocityX(body.velocity.x * 0.72);
+    if (Math.abs(body.velocity.x) < 3) body.setVelocityX(0);
   }
 
   private enterState(next: BossState): void {

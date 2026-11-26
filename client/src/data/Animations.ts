@@ -65,8 +65,8 @@ const SPECS: readonly AnimSpec[] = [
   { key: ANIM.death, sheet: 'death-fx', start: 0, end: 2, frameRate: 12, repeat: 0 },
 
   { key: ANIM.bossIdle, sheet: 'boss-movement', start: 0, end: 3, frameRate: 6, repeat: -1 },
-  { key: ANIM.bossWalk, sheet: 'boss-movement', start: 4, end: 8, frameRate: 10, repeat: -1 },
-  { key: ANIM.bossRun, sheet: 'boss-movement', start: 5, end: 8, frameRate: 12, repeat: -1 },
+  { key: ANIM.bossWalk, sheet: 'boss-movement', start: 4, end: 8, frameRate: 8, repeat: -1 },
+  { key: ANIM.bossRun, sheet: 'boss-movement', start: 4, end: 8, frameRate: 14, repeat: -1 },
   { key: ANIM.bossAttack, sheet: 'boss-melee', start: 0, end: 5, frameRate: 10, repeat: 0 },
   { key: ANIM.bossCharge, sheet: 'boss-melee', start: 0, end: 1, frameRate: 6, repeat: 0 },
   { key: ANIM.bossBeamCharge, sheet: 'boss-beam-cast', start: 0, end: 5, frameRate: 10, repeat: -1 },

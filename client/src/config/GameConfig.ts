@@ -185,7 +185,7 @@ export const DEPTH = {
 export const BOSS_AI = {
   detectRange: 420,
   loseRange: 520,
-  approachSpeed: 46,
+  approachSpeed: 72,
   attackDistance: 82,
   phaseTwoHpRatio: 0.5,
   preparationMs: 500,
@@ -210,7 +210,7 @@ export const BOSS_AI = {
   magicRange: 280,
   magicHeight: 70,
   phaseTransitionMs: 900,
-  empowerApproachSpeed: 58,
+  empowerApproachSpeed: 96,
   recoveryMs: 700,
   hurtStunMs: 180,
 } as const;
