@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, DEPTH, VIEW } from '../config/GameConfig';
+import { DEPTH, VIEW } from '../config/GameConfig';
 import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
 
@@ -7,13 +7,16 @@ const TILE = 16;
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
 const FLOOR_TOP = VIEW.groundY;
 const WORLD_PLATFORMS = [
-  { x: 280, y: 202, width: 144 },
-  { x: 520, y: 174, width: 112 },
-  { x: 760, y: 210, width: 160 },
-  { x: 1050, y: 184, width: 144 },
-  { x: 1320, y: 205, width: 176 },
-  { x: 1630, y: 172, width: 128 },
-  { x: 1870, y: 208, width: 160 },
+  { x: 190, y: 210, width: 128 },
+  { x: 370, y: 190, width: 144 },
+  { x: 550, y: 205, width: 128 },
+  { x: 735, y: 180, width: 144 },
+  { x: 920, y: 200, width: 144 },
+  { x: 1110, y: 175, width: 128 },
+  { x: 1300, y: 195, width: 144 },
+  { x: 1490, y: 178, width: 128 },
+  { x: 1680, y: 205, width: 144 },
+  { x: 1880, y: 185, width: 144 },
 ] as const;
 
 /**
@@ -138,16 +141,16 @@ export class WorldTwoScene extends Phaser.Scene {
   private createPlatforms(): void {
     this.platformGroup = this.physics.add.staticGroup();
 
-    this.addSolidSurface(VIEW.worldWidth / 2, FLOOR_TOP, VIEW.worldWidth, 64, 0);
+    this.addSolidSurface(VIEW.worldWidth / 2, FLOOR_TOP, VIEW.worldWidth, 64);
 
     for (const platform of WORLD_PLATFORMS) {
-      this.addSolidSurface(platform.x, platform.y, platform.width, 28, 0);
+      this.addSolidSurface(platform.x, platform.y, platform.width, 28);
     }
 
     this.addWorldProps();
   }
 
-  private addSolidSurface(centerX: number, topY: number, width: number, height: number, _unused: number): void {
+  private addSolidSurface(centerX: number, topY: number, width: number, height: number): void {
     const left = Math.round(centerX - width / 2);
     const top = Math.round(topY);
     const bodyObject = this.add.rectangle(centerX, top + height / 2, width, height, 0x000000, 0);
