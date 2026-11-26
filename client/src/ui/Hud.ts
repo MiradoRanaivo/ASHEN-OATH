@@ -14,7 +14,6 @@ export class Hud {
   private readonly regionLabel: Phaser.GameObjects.Text;
   private readonly panel?: Phaser.GameObjects.Image;
   private readonly bossPanel?: Phaser.GameObjects.Image;
-  private readonly controlsPanel?: Phaser.GameObjects.Image;
   private lastHp = -1;
   private lastStamina = -1;
   private currentRegion = '';
@@ -43,8 +42,6 @@ export class Hud {
         .setOrigin(0).setScale(0.68).setScrollFactor(0).setDepth(DEPTH.hud);
       this.bossPanel = scene.add.image(VIEW.width / 2, 7, 'dark-ages-ui', 'gold-bar')
         .setOrigin(0.5, 0).setScale(1.35, 0.62).setScrollFactor(0).setDepth(DEPTH.hud);
-      this.controlsPanel = scene.add.image(VIEW.width - 8, VIEW.height - 7, 'dark-ages-ui', 'dark-button')
-        .setOrigin(1, 1).setScale(0.34).setAlpha(0.86).setScrollFactor(0).setDepth(DEPTH.hud);
     }
 
     scene.add.text(17, 13, 'ASHEN OATH', {
