@@ -14,6 +14,7 @@ const BOSS = 'assets/boss/fallen_skeleton_king';
 
 export const IMAGE_ASSETS: readonly { key: string; path: string }[] = [
   { key: 'environment', path: `${WEB2D}/environment_dark_ruins_moonlight.png` },
+  { key: 'dark-ages-ui', path: 'assets/ui/dark-ages/32x32-Tilesheet.png' },
   { key: 'boss-beam-visual', path: `${BOSS}/beam_visual.png` },
   { key: 'boss-aoe-visual', path: `${BOSS}/aoe_visual.png` },
 ];

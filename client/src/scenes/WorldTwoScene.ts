@@ -1,14 +1,43 @@
 import Phaser from 'phaser';
-import { COLORS, DEPTH, VIEW } from '../config/GameConfig';
+import { DEPTH, VIEW } from '../config/GameConfig';
 import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
+import { PauseMenu } from '../ui/PauseMenu';
 
+const TILE = 16;
+const GROUND_SEGMENT = 16;
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
+const FLOOR_TOP = VIEW.groundY;
+const WORLD_PLATFORMS = [
+  { x: 190, y: 222, width: 104 },
+  { x: 335, y: 207, width: 112 },
+  { x: 485, y: 220, width: 104 },
+  { x: 635, y: 198, width: 112 },
+  { x: 785, y: 216, width: 104 },
+  { x: 935, y: 194, width: 112 },
+  { x: 1085, y: 212, width: 104 },
+  { x: 1235, y: 190, width: 112 },
+  { x: 1385, y: 210, width: 104 },
+  { x: 1535, y: 188, width: 112 },
+  { x: 1685, y: 210, width: 104 },
+  { x: 1835, y: 192, width: 112 },
+  { x: 1980, y: 214, width: 96 },
+] as const;
 
+const GROUND_RELIEF = [0, 0, -2, -4, -2, 0, 2, 0, -2, -4, -2, 0, 2, 0, -2, -4] as const;
+const groundYAt = (x: number): number => FLOOR_TOP + GROUND_RELIEF[Math.floor(Math.max(0, x) / 128) % GROUND_RELIEF.length];
+
+/**
+ * Monde 2 — niveau latéral construit en tuiles de décor dessinées.
+ * Les spritesheets top-down du pack Undead/Cursed ne sont volontairement
+ * plus utilisés comme une grille de plateformes : leurs frames ne forment
+ * pas un tileset side-scroller ordonné.
+ */
 export class WorldTwoScene extends Phaser.Scene {
   private player!: Player;
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private hud!: Hud;
+  private pauseMenu!: PauseMenu;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyLeft!: Phaser.Input.Keyboard.Key;
@@ -39,11 +68,9 @@ export class WorldTwoScene extends Phaser.Scene {
       });
     }
 
-    this.cache.json.get('world2-collision-config');
-
     this.physics.world.setBounds(0, 0, VIEW.worldWidth, VIEW.height);
     this.cameras.main.setBounds(0, 0, VIEW.worldWidth, VIEW.height);
-    this.cameras.main.setBackgroundColor(COLORS.background);
+    this.cameras.main.setBackgroundColor(0x10111a);
 
     this.createBackdrop();
     this.createPlatforms();
@@ -52,6 +79,7 @@ export class WorldTwoScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.platformGroup);
 
     this.hud = new Hud(this);
+    this.pauseMenu = new PauseMenu(this);
     this.hud.setRegion('Terres maudites');
     this.bindInput();
 
@@ -61,82 +89,274 @@ export class WorldTwoScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    if (this.pauseMenu?.isOpen) return;
     const delta = Math.min(deltaMs, 50);
     this.player.updatePlayer(this.readInput(), delta);
     this.hud.update(this.player.hp, this.player.stamina, this.player.riposteReady);
   }
 
+  /** Fond en plans successifs : ciel, lune, montagnes et silhouettes mortes. */
   private createBackdrop(): void {
-    const groundRows = Math.ceil(VIEW.groundY / 16);
-    const groundCols = Math.ceil(VIEW.worldWidth / 16);
+    const bg = this.add.graphics().setDepth(DEPTH.backdrop - 4);
+    bg.fillGradientStyle(0x111522, 0x111522, 0x25202b, 0x25202b, 1);
+    bg.fillRect(0, 0, VIEW.worldWidth, VIEW.height);
 
-    for (let row = 0; row < groundRows; row++) {
-      for (let col = 0; col < groundCols; col++) {
-        const texture = row < 10 ? 'world2-undead-ground' : 'world2-cursed-ground';
-        const frame = row < 10
-          ? (row * 26 + col * 3) % 2262
-          : (row * 40 + col * 3) % 2240;
-        this.add.image(col * 16 + 8, row * 16 + 8, texture, frame)
-          .setDepth(DEPTH.backdrop);
+    // Lueur lunaire et halo.
+    bg.fillStyle(0xb8b4a5, 0.035);
+    bg.fillCircle(1510, 58, 62);
+    bg.fillStyle(0xc9c2aa, 0.8);
+    bg.fillCircle(1510, 58, 19);
+    bg.fillStyle(0x25202b, 1);
+    bg.fillCircle(1518, 51, 18);
+
+    // Crêtes lointaines : silhouettes larges, volontairement peu contrastées.
+    bg.fillStyle(0x1a1b27, 1);
+    bg.fillPoints([
+      { x: 0, y: 174 }, { x: 130, y: 112 }, { x: 245, y: 164 },
+      { x: 390, y: 104 }, { x: 540, y: 160 }, { x: 700, y: 118 },
+      { x: 865, y: 165 }, { x: 1030, y: 105 }, { x: 1190, y: 164 },
+      { x: 1370, y: 112 }, { x: 1530, y: 160 }, { x: 1710, y: 106 },
+      { x: 1880, y: 162 }, { x: 2080, y: 118 }, { x: 2080, y: 270 }, { x: 0, y: 270 },
+    ], true);
+
+    // Pins et branches mortes au second plan.
+    const trees = this.add.graphics().setDepth(DEPTH.backdrop - 2);
+    for (let x = 90, i = 0; x < VIEW.worldWidth; x += 185, i += 1) {
+      const baseY = 232 + (i % 3) * 5;
+      const height = 76 + (i % 4) * 15;
+      trees.lineStyle(5, 0x171820, 1);
+      trees.lineBetween(x, baseY, x + ((i % 2) ? 5 : -4), baseY - height);
+      trees.lineStyle(2, 0x171820, 1);
+      for (let branch = 0; branch < 4; branch += 1) {
+        const y = baseY - 18 - branch * 14;
+        const direction = branch % 2 ? -1 : 1;
+        trees.lineBetween(x, y, x + direction * (18 + (branch % 3) * 5), y - 12);
+        trees.lineBetween(x + direction * (18 + (branch % 3) * 5), y - 12, x + direction * 27, y - 22);
       }
     }
 
-    const shade = this.add.graphics().setScrollFactor(0).setDepth(DEPTH.backdrop + 1);
-    shade.fillStyle(0x090915, 0.18);
-    shade.fillRect(0, 0, VIEW.width, VIEW.height);
+    // Brume basse, non interactive.
+    const mist = this.add.graphics().setDepth(DEPTH.backdrop - 1);
+    mist.fillStyle(0x8b8790, 0.045);
+    for (let x = 0; x < VIEW.worldWidth; x += 240) {
+      mist.fillEllipse(x + 100, 224, 210, 28);
+    }
+
+    // Un léger voile sombre conserve la lisibilité du personnage et du HUD.
+    this.add.rectangle(0, 0, VIEW.worldWidth, VIEW.height, 0x090912, 0.12)
+      .setOrigin(0)
+      .setDepth(DEPTH.backdrop + 1);
   }
 
+  /** Terrain irrégulier avec collisions segmentées, relief et détails intégrés. */
   private createPlatforms(): void {
     this.platformGroup = this.physics.add.staticGroup();
+    this.createNaturalGround();
 
-    const platforms = [
-      { x: 240, y: 250, width: 480 },
-      { x: 660, y: 220, width: 224 },
-      { x: 980, y: 250, width: 320 },
-    ];
+    for (const platform of WORLD_PLATFORMS) {
+      this.addRockLedge(platform.x, platform.y, platform.width);
+    }
 
-    for (const platform of platforms) {
-      const ledge = this.add.rectangle(platform.x, platform.y + 8, platform.width, 16, 0x4a5266, 0);
-      ledge.setDepth(DEPTH.platform);
-      this.platformGroup.add(ledge);
+    this.addWorldProps();
+  }
 
-      const body = ledge.body as Phaser.Physics.Arcade.StaticBody;
-      body.updateFromGameObject();
+  private createNaturalGround(): void {
+    const ground = this.add.graphics().setDepth(DEPTH.platform - 0.2);
+    const topPoints: Phaser.Geom.Point[] = [{ x: 0, y: groundYAt(0) }];
 
-      for (let x = platform.x - platform.width / 2 + 8; x < platform.x + platform.width / 2; x += 16) {
-        const tileRow = Math.floor(platform.y / 16);
-        const tileCol = Math.floor(x / 16);
-        const frame = (tileRow * 26 + tileCol) % 2262;
-        this.add.image(x, platform.y, 'world2-undead-ground', frame)
-          .setOrigin(0.5, 1)
-          .setDepth(DEPTH.platform);
+    for (let x = 0; x <= VIEW.worldWidth; x += GROUND_SEGMENT) {
+      const top = groundYAt(x);
+      const bodyHeight = VIEW.height - top + 18;
+      const collider = this.add.rectangle(
+        x + GROUND_SEGMENT / 2,
+        top + bodyHeight / 2,
+        GROUND_SEGMENT + 1,
+        bodyHeight,
+        0x000000,
+        0,
+      );
+      this.platformGroup.add(collider);
+      (collider.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+      topPoints.push(new Phaser.Geom.Point(x, top));
+    }
+    topPoints.push(new Phaser.Geom.Point(VIEW.worldWidth, VIEW.height + 24));
+    topPoints.push(new Phaser.Geom.Point(0, VIEW.height + 24));
+
+    ground.fillStyle(0x24232b, 1);
+    ground.fillPoints(topPoints, true);
+    ground.fillStyle(0x393740, 1);
+    ground.fillPoints([
+      { x: 0, y: 252 }, { x: 240, y: 251 }, { x: 430, y: 254 },
+      { x: 680, y: 250 }, { x: 920, y: 253 }, { x: 1180, y: 250 },
+      { x: 1440, y: 254 }, { x: 1700, y: 251 }, { x: 2080, y: 253 },
+      { x: 2080, y: 270 }, { x: 0, y: 270 },
+    ], true);
+
+    // Strates rocheuses horizontales, interrompues pour éviter l'effet de briques.
+    for (let row = 0; row < 3; row += 1) {
+      const y = 258 + row * 5;
+      ground.lineStyle(1, row === 0 ? 0x4a4549 : 0x302d35, 0.9);
+      for (let x = 0; x < VIEW.worldWidth; x += 64) {
+        const skip = ((x / 64 + row * 3) % 5) === 0;
+        if (!skip) ground.lineBetween(x + 4, y, x + 42 + ((x / 64) % 3) * 5, y + (row % 2));
       }
     }
 
-    this.add.image(8 * 16 + 8, 250, 'world2-undead-atlas', 'broken_tree_shadow2_1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
+    // Bord supérieur érodé et petits éclats minéraux.
+    for (let x = 8; x < VIEW.worldWidth; x += 24) {
+      const y = groundYAt(x);
+      const variation = (x * 13) % 9;
+      ground.fillStyle(variation % 2 ? 0x777064 : 0x625d58, 0.95);
+      ground.fillRect(x, y, 5 + (variation % 4), 1);
+      ground.fillStyle(0x171820, 0.9);
+      ground.fillTriangle(x + 7, y + 3, x + 12, y + 3, x + 9, y + 7 + (variation % 4));
+      if (variation === 2 || variation === 6) {
+        ground.lineStyle(1, 0x171820, 0.9);
+        ground.lineBetween(x + 3, y + 8, x + 7, y + 12);
+        ground.lineBetween(x + 7, y + 12, x + 5, y + 17);
+      }
+    }
 
-    this.add.image(12 * 16 + 8, 250, 'world2-undead-atlas', 'grave_shadow2_1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
+    this.addGroundDetails();
+  }
 
-    this.add.image(20 * 16 + 8, 250, 'world2-cursed-atlas', 'rock3_shadow2_1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
+  /** Pierres, fissures et herbes mortes posées sur la surface réelle du terrain. */
+  private addGroundDetails(): void {
+    const detail = this.add.graphics().setDepth(DEPTH.platform + 0.15);
+    for (let x = 34; x < VIEW.worldWidth - 20; x += 47) {
+      const y = groundYAt(x);
+      const seed = (x * 37) % 17;
+      if (seed % 3 === 0) {
+        detail.fillStyle(0x625c58, 1);
+        detail.fillTriangle(x, y - 1, x + 7, y - 2, x + 4, y - 5);
+        detail.fillStyle(0x34323a, 1);
+        detail.fillTriangle(x + 8, y, x + 14, y - 1, x + 11, y - 4);
+      } else if (seed % 3 === 1) {
+        detail.lineStyle(1, 0x171820, 1);
+        detail.lineBetween(x, y + 5, x + 4, y + 9);
+        detail.lineBetween(x + 4, y + 9, x + 8, y + 7);
+      } else {
+        detail.lineStyle(1, 0x343c35, 1);
+        detail.lineBetween(x, y - 1, x - 2, y - 8);
+        detail.lineBetween(x - 2, y - 8, x - 6, y - 11);
+        detail.lineBetween(x - 1, y - 5, x + 4, y - 10);
+      }
+    }
+  }
 
-    this.add.image(26 * 16 + 8, 220, 'world2-cursed-atlas', 'spike_plant_shadow2_1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
+  /** Ledge rocheux : silhouette ébréchée, strates, fissures et racines sous la dalle. */
+  private addRockLedge(centerX: number, topY: number, width: number): void {
+    const left = Math.round(centerX - width / 2);
+    const right = left + width;
+    const bottom = topY + 30;
+    const collider = this.add.rectangle(centerX, topY + 12, width, 20, 0x000000, 0);
+    collider.setDepth(DEPTH.platform);
+    this.platformGroup.add(collider);
+    (collider.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
 
-    this.add.image(31 * 16 + 8, 250, 'world2-cursed-atlas', 'bones_shadow2_1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
+    const rock = this.add.graphics().setDepth(DEPTH.platform - 0.05);
+    const silhouette = [
+      { x: left, y: topY + 7 }, { x: left + 7, y: topY + 3 },
+      { x: left + 18, y: topY + 2 }, { x: left + 29, y: topY + 4 },
+      { x: left + 42, y: topY }, { x: left + 57, y: topY + 2 },
+      { x: left + 71, y: topY + 1 }, { x: right - 17, y: topY + 4 },
+      { x: right - 6, y: topY + 2 }, { x: right, y: topY + 7 },
+      { x: right - 3, y: bottom - 4 }, { x: right - 15, y: bottom },
+      { x: left + 20, y: bottom - 2 }, { x: left + 8, y: bottom - 7 },
+    ];
+    rock.fillStyle(0x292831, 1);
+    rock.fillPoints(silhouette, true);
+    rock.fillStyle(0x55504e, 1);
+    rock.fillPoints([
+      { x: left, y: topY + 7 }, { x: left + 7, y: topY + 3 },
+      { x: left + 18, y: topY + 2 }, { x: left + 29, y: topY + 4 },
+      { x: left + 42, y: topY }, { x: left + 57, y: topY + 2 },
+      { x: left + 71, y: topY + 1 }, { x: right - 17, y: topY + 4 },
+      { x: right - 6, y: topY + 2 }, { x: right, y: topY + 7 },
+      { x: right - 3, y: topY + 13 }, { x: left + 5, y: topY + 13 },
+    ], true);
+    rock.fillStyle(0x81786a, 1);
+    rock.fillPoints([
+      { x: left + 7, y: topY + 3 }, { x: left + 18, y: topY + 2 },
+      { x: left + 29, y: topY + 4 }, { x: left + 42, y: topY },
+      { x: left + 57, y: topY + 2 }, { x: left + 71, y: topY + 1 },
+      { x: left + 71, y: topY + 4 }, { x: left + 42, y: topY + 4 },
+      { x: left + 18, y: topY + 6 }, { x: left + 7, y: topY + 6 },
+    ], true);
 
-    const animated = this.add.sprite(15 * 16 + 8, 250, 'world2-undead-anim1')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.prop);
-    animated.play('world2-undead-anim1-loop');
+    // Couches rocheuses et fractures non répétitives.
+    for (let x = left + 8, i = 0; x < right - 10; x += 23, i += 1) {
+      const y = topY + 15 + (i % 2) * 5;
+      rock.lineStyle(1, i % 2 ? 0x1c1d25 : 0x71685e, 0.9);
+      rock.lineBetween(x, y, Math.min(right - 4, x + 12 + (i % 3) * 3), y - 2);
+      rock.fillStyle(i % 2 ? 0x3c3940 : 0x48434a, 1);
+      rock.fillTriangle(x + 2, y + 4, x + 11, y + 3, x + 7, y + 8);
+      if (i % 3 === 0) {
+        rock.lineStyle(1, 0x171820, 1);
+        rock.lineBetween(x + 4, topY + 7, x + 8, topY + 12);
+        rock.lineBetween(x + 8, topY + 12, x + 6, topY + 16);
+      }
+    }
+
+    // Racines courtes et pointes de roche sous les surplombs.
+    for (let x = left + 15, i = 0; x < right - 8; x += 31, i += 1) {
+      const length = 5 + (i % 3) * 4;
+      rock.fillStyle(0x211f28, 1);
+      rock.fillTriangle(x, bottom - 4, x + 5, bottom - 4, x + 2, bottom + length);
+      if (i % 2 === 0) {
+        rock.lineStyle(1, 0x34352f, 1);
+        rock.lineBetween(x + 2, topY + 5, x - 3, topY + 15);
+      }
+    }
+
+    // Quelques touffes de mousse morte, très discrètes sur le rebord.
+    rock.lineStyle(1, 0x59604a, 1);
+    rock.lineBetween(left + 20, topY + 2, left + 18, topY - 3);
+    rock.lineBetween(left + 20, topY + 2, left + 24, topY - 2);
+    rock.lineBetween(right - 27, topY + 3, right - 29, topY - 2);
+  }
+
+  /** Décor cohérent avec une nécropole : pierres, ruines et arbres morts.
+   * Les éléments organiques rouges, les cristaux lumineux et les amas trop
+   * contrastés sont exclus de cette zone pour préserver la lecture du niveau.
+   */
+  private addWorldProps(): void {
+    const props: Array<{
+      x: number;
+      atlas: string;
+      frame: string;
+      scale: number;
+      depthOffset?: number;
+    }> = [
+      // Silhouettes principales : ruines effondrées et arbres desséchés.
+      { x: 150, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow2_1', scale: 0.92, depthOffset: -0.1 },
+      { x: 470, atlas: 'world2-undead-atlas', frame: 'ruin_shadow1_1', scale: 0.82 },
+      { x: 790, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow1_1', scale: 0.88, depthOffset: -0.1 },
+      { x: 1110, atlas: 'world2-undead-atlas', frame: 'ruin_shadow2_1', scale: 0.82 },
+      { x: 1450, atlas: 'world2-undead-atlas', frame: 'broken_tree_shadow3_1', scale: 0.9, depthOffset: -0.1 },
+      { x: 1770, atlas: 'world2-undead-atlas', frame: 'ruin_shadow2_1', scale: 0.84 },
+      { x: 1990, atlas: 'world2-undead-atlas', frame: 'dead_tree_shadow3_1', scale: 0.82 },
+
+      // Débris minéraux discrets : aucune chair suspendue ni cristal lumineux.
+      { x: 315, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.62 },
+      { x: 655, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.72 },
+      { x: 965, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.66 },
+      { x: 1290, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.64 },
+      { x: 1620, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.7 },
+      { x: 1900, atlas: 'world2-undead-atlas', frame: 'rock_shadow2_1', scale: 0.66 },
+    ];
+
+    for (const prop of props) {
+      if (!this.textures.exists(prop.atlas) || !this.textures.get(prop.atlas).has(prop.frame)) {
+        continue;
+      }
+
+      const groundY = groundYAt(prop.x);
+      this.add.image(prop.x, groundY, prop.atlas, prop.frame)
+        .setOrigin(0.5, 1)
+        .setScale(prop.scale)
+        .setDepth(DEPTH.prop + (prop.depthOffset ?? 0));
+    }
   }
 
   private readInput(): PlayerInput {

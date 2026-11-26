@@ -5,6 +5,7 @@ import { Enemy, type EnemySpawn } from '../entities/Enemy';
 import { Player, type PlayerInput } from '../entities/Player';
 import { Hud } from '../ui/Hud';
 import { Boss } from '../entities/Boss';
+import { PauseMenu } from '../ui/PauseMenu';
 
 interface PlatformDef {
   readonly x: number;
@@ -26,11 +27,17 @@ const REGIONS = [
   { name: 'Trône du silence', backgroundTint: 0xaecbf0, atmosphere: 0x14283e, atmosphereAlpha: 0.24, ground: 0x526576, edge: 0xb1cadb, side: 0x283644 },
 ] as const;
 
+/**
+ * Parcours de plateformes du Monde 1.
+ * Les centres sont volontairement espacés : aucune plateforme ne se chevauche.
+ * Les hauteurs alternent entre une marche basse et une terrasse plus élevée
+ * pour créer un rythme de saut lisible sans bloquer la progression.
+ */
 const PLATFORMS: readonly PlatformDef[] = [
-  { x: 700, surface: 218, width: 140 },
-  { x: 1060, surface: 230, width: 160 },
-  { x: 660, surface: 186, width: 90 },
-  { x: 1000, surface: 190, width: 90 },
+  { x: 500, surface: 218, width: 112 },
+  { x: 690, surface: 190, width: 112 },
+  { x: 940, surface: 218, width: 112 },
+  { x: 1120, surface: 190, width: 112 },
 ];
 
 const ENEMIES: readonly EnemySpawn[] = [
@@ -47,6 +54,7 @@ export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private hud!: Hud;
+  private pauseMenu!: PauseMenu;
   private background!: Phaser.GameObjects.Image;
   private atmosphere!: Phaser.GameObjects.Rectangle;
   private activeRegion = -1;
@@ -82,6 +90,8 @@ export class GameScene extends Phaser.Scene {
     this.createBlockTextures();
     this.createBackdrop();
     this.createPlatforms();
+    this.createGroundDetails();
+    this.createCryptProps();
     this.createBossArena();
 
     this.player = new Player(this, SPAWN_POINT.x, SPAWN_POINT.y);
@@ -90,6 +100,7 @@ export class GameScene extends Phaser.Scene {
     this.createEnemies();
 
     this.hud = new Hud(this);
+    this.pauseMenu = new PauseMenu(this);
     this.createDeathOverlay();
     this.bindInput();
 
@@ -122,6 +133,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, deltaMs: number): void {
+    if (this.pauseMenu?.isOpen) return;
     const delta = Math.min(deltaMs, 50);
     this.player.updatePlayer(this.readInput(), delta);
 
@@ -261,6 +273,207 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDisplaySize(BOSS_AI.magicRange, BOSS_AI.magicHeight)
       .setAlpha(0.78 + Math.sin(time / 55) * 0.18);
+  }
+
+  /**
+   * Détails de sol pour la première région : éclats de pierre, fissures et
+   * petits débris de tombe. Décor uniquement : aucune hitbox ajoutée.
+   */
+  private createGroundDetails(): void {
+    const cryptEnd = REGION_WIDTH;
+    let seed = 7419;
+    const random = (min: number, max: number): number => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return min + (seed / 0xffffffff) * (max - min);
+    };
+
+    // Éclats de pierre irréguliers répartis sans couvrir le chemin du joueur.
+    for (let i = 0; i < 34; i++) {
+      const x = random(24, cryptEnd - 18);
+      const y = VIEW.groundY - random(3, 13);
+      const w = random(3, 9);
+      const h = random(2, 5);
+      const stone = this.add.graphics().setDepth(DEPTH.prop + 0.8);
+      stone.fillStyle(i % 3 === 0 ? 0x74666a : 0x39323a, 0.92);
+      stone.fillPoints([
+        new Phaser.Geom.Point(x - w, y),
+        new Phaser.Geom.Point(x - w / 2, y - h),
+        new Phaser.Geom.Point(x + w * 0.65, y - h * 0.7),
+        new Phaser.Geom.Point(x + w, y),
+        new Phaser.Geom.Point(x + w * 0.2, y + 1),
+      ], true);
+      stone.lineStyle(1, 0x211d24, 0.9);
+      stone.strokePoints([
+        new Phaser.Geom.Point(x - w, y),
+        new Phaser.Geom.Point(x - w / 2, y - h),
+        new Phaser.Geom.Point(x + w * 0.65, y - h * 0.7),
+        new Phaser.Geom.Point(x + w, y),
+      ], false);
+    }
+
+    // Fissures fines au pied des murs, orientées de manière irrégulière.
+    for (let i = 0; i < 11; i++) {
+      const x = random(32, cryptEnd - 30);
+      const y = VIEW.groundY - random(1, 3);
+      const crack = this.add.graphics().setDepth(DEPTH.prop + 0.9);
+      crack.lineStyle(1, 0x211d24, 0.9);
+      crack.beginPath();
+      crack.moveTo(x, y);
+      crack.lineTo(x + random(3, 8), y - random(2, 4));
+      crack.lineTo(x + random(7, 13), y - random(1, 3));
+      crack.lineTo(x + random(13, 17), y - random(3, 5));
+      crack.strokePath();
+    }
+
+    // Fragments de pierre plus gros, placés près des bords pour préserver la lisibilité.
+    for (const x of [82, 276, 432]) {
+      const rubble = this.add.graphics().setDepth(DEPTH.prop + 1);
+      rubble.fillStyle(0x51464b, 1);
+      rubble.fillPoints([
+        new Phaser.Geom.Point(x - 9, VIEW.groundY),
+        new Phaser.Geom.Point(x - 7, VIEW.groundY - 7),
+        new Phaser.Geom.Point(x - 1, VIEW.groundY - 11),
+        new Phaser.Geom.Point(x + 6, VIEW.groundY - 8),
+        new Phaser.Geom.Point(x + 10, VIEW.groundY),
+      ], true);
+      rubble.lineStyle(1, 0x82716d, 0.8);
+      rubble.strokePoints([
+        new Phaser.Geom.Point(x - 7, VIEW.groundY - 7),
+        new Phaser.Geom.Point(x - 1, VIEW.groundY - 11),
+        new Phaser.Geom.Point(x + 6, VIEW.groundY - 8),
+      ], false);
+    }
+  }
+
+
+  /**
+   * Habillage vertical de la Crypte oubliée.
+   * Les formes restent derrière le joueur et ne créent aucune collision.
+   */
+  private createCryptProps(): void {
+    const cryptDepth = DEPTH.prop + 0.2;
+    const stoneDark = 0x28232b;
+    const stoneMid = 0x51464d;
+    const stoneLight = 0x88766d;
+    const mortar = 0x17141b;
+
+    // Deux colonnes ruinées, volontairement asymétriques.
+    const drawBrokenColumn = (x: number, height: number, brokenRight: boolean): void => {
+      const y = VIEW.groundY;
+      const g = this.add.graphics().setDepth(cryptDepth);
+      g.fillStyle(mortar, 0.95);
+      g.fillRect(x - 13, y - height, 27, height);
+      g.fillStyle(stoneDark, 1);
+      g.fillRect(x - 11, y - height + 3, 22, height - 3);
+      g.fillStyle(stoneMid, 1);
+      g.fillRect(x - 9, y - height + 5, 6, height - 8);
+      g.fillStyle(stoneLight, 0.75);
+      g.fillRect(x - 9, y - height + 5, 2, height - 10);
+
+      // Joints horizontaux irréguliers.
+      for (let row = 1; row < Math.floor(height / 16); row++) {
+        const yy = y - height + row * 16;
+        g.fillStyle(mortar, 0.9);
+        g.fillRect(x - 11, yy, 22, 2);
+        g.fillStyle(stoneLight, 0.22);
+        g.fillRect(x - 9, yy + 2, 18, 1);
+      }
+
+      // Chapiteau ébréché et base massive.
+      g.fillStyle(stoneDark, 1);
+      g.fillPoints([
+        new Phaser.Geom.Point(x - 17, y - height + 4),
+        new Phaser.Geom.Point(x - 14, y - height - 5),
+        new Phaser.Geom.Point(x + (brokenRight ? 8 : 14), y - height - 5),
+        new Phaser.Geom.Point(x + (brokenRight ? 13 : 17), y - height + 3),
+      ], true);
+      g.fillStyle(stoneLight, 0.65);
+      g.fillRect(x - 14, y - height - 4, brokenRight ? 17 : 25, 2);
+      g.fillStyle(stoneDark, 1);
+      g.fillRect(x - 17, y - 10, 34, 10);
+      g.fillStyle(stoneMid, 1);
+      g.fillRect(x - 15, y - 9, 30, 3);
+
+      if (brokenRight) {
+        g.fillStyle(stoneDark, 1);
+        g.fillPoints([
+          new Phaser.Geom.Point(x + 5, y - height - 5),
+          new Phaser.Geom.Point(x + 13, y - height - 12),
+          new Phaser.Geom.Point(x + 17, y - height - 4),
+        ], true);
+      }
+    };
+
+    drawBrokenColumn(112, 78, true);
+    drawBrokenColumn(452, 106, false);
+
+    // Sarcophage bas, posé au sol et dessiné derrière la trajectoire du joueur.
+    const tomb = this.add.graphics().setDepth(cryptDepth + 0.15);
+    tomb.fillStyle(0x17141b, 0.9);
+    tomb.fillRect(232, VIEW.groundY - 25, 58, 25);
+    tomb.fillStyle(stoneDark, 1);
+    tomb.fillPoints([
+      new Phaser.Geom.Point(228, VIEW.groundY - 25),
+      new Phaser.Geom.Point(236, VIEW.groundY - 34),
+      new Phaser.Geom.Point(284, VIEW.groundY - 34),
+      new Phaser.Geom.Point(294, VIEW.groundY - 25),
+    ], true);
+    tomb.fillStyle(stoneMid, 1);
+    tomb.fillRect(237, VIEW.groundY - 23, 48, 19);
+    tomb.fillStyle(stoneLight, 0.7);
+    tomb.fillRect(239, VIEW.groundY - 32, 44, 3);
+    tomb.lineStyle(1, 0x211d24, 1);
+    tomb.strokeRect(244, VIEW.groundY - 19, 34, 12);
+    tomb.lineBetween(261, VIEW.groundY - 18, 261, VIEW.groundY - 8);
+
+    // Chaînes suspendues : maillons carrés espacés pour rester lisibles en pixel art.
+    const drawChain = (x: number, top: number, length: number): void => {
+      const chain = this.add.graphics().setDepth(cryptDepth + 0.1);
+      chain.lineStyle(2, 0x28232b, 1);
+      chain.lineBetween(x, top, x, top + length);
+      for (let y = top + 3; y < top + length; y += 8) {
+        chain.lineStyle(2, 0x88766d, 0.9);
+        chain.strokeRect(x - 2, y, 4, 5);
+        chain.lineStyle(1, 0x17141b, 0.9);
+        chain.lineBetween(x - 1, y + 1, x + 1, y + 1);
+      }
+      chain.fillStyle(0x17141b, 1);
+      chain.fillRect(x - 4, top - 2, 8, 3);
+    };
+    drawChain(205, 20, 62);
+    drawChain(382, 8, 86);
+
+    // Appliques murales et flammes discrètes. Les lueurs sont animées sans lumière coûteuse.
+    const createTorch = (x: number, y: number): void => {
+      const mount = this.add.graphics().setDepth(cryptDepth + 0.25);
+      mount.fillStyle(0x211b22, 1);
+      mount.fillRect(x - 5, y + 5, 10, 8);
+      mount.fillStyle(0x796044, 1);
+      mount.fillRect(x - 3, y, 6, 9);
+      mount.fillStyle(0x352832, 1);
+      mount.fillRect(x - 2, y - 5, 4, 7);
+
+      const glow = this.add.circle(x, y - 7, 13, 0xc36b32, 0.12)
+        .setDepth(DEPTH.effect - 0.5);
+      const flame = this.add.ellipse(x, y - 8, 6, 11, 0xf0a34c, 0.9)
+        .setDepth(DEPTH.effect - 0.2);
+      const core = this.add.ellipse(x, y - 6, 2, 6, 0xffdf91, 0.95)
+        .setDepth(DEPTH.effect - 0.1);
+
+      this.tweens.add({
+        targets: [glow, flame, core],
+        alpha: { from: 0.72, to: 1 },
+        scaleX: { from: 0.86, to: 1.12 },
+        scaleY: { from: 0.92, to: 1.08 },
+        duration: 420,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        delay: x % 170,
+      });
+    };
+    createTorch(176, 126);
+    createTorch(414, 104);
   }
 
   private createBossArena(): void {
@@ -471,10 +684,28 @@ export class GameScene extends Phaser.Scene {
       this.createPlatformSurface(left, platform.surface, width);
 
       if (platform.surface < VIEW.groundY - 4) {
-        const top = platform.surface + PLATFORM_HEIGHT;
-        const pillarWidth = Math.min(width, 2 * BLOCK);
-        const pillarLeft = left + Math.floor((width - pillarWidth) / 2 / BLOCK) * BLOCK;
-        this.addBlocks('block-wall', pillarLeft, top, pillarWidth, VIEW.groundY - top, DEPTH.platform - 1);
+        // Sous-face pleine : la plateforme devient une avancée de terrain
+        // rocheuse plutôt qu'une dalle flottant sur un pilier isolé.
+        const undersideTop = platform.surface + PLATFORM_HEIGHT;
+        const undersideHeight = VIEW.groundY - undersideTop;
+        this.addBlocks(
+          'block-wall',
+          left,
+          undersideTop,
+          width,
+          undersideHeight,
+          DEPTH.platform - 1,
+        );
+
+        // Ombre discrète sous le rebord pour détacher la pierre du fond.
+        this.add.rectangle(
+          left + width / 2,
+          undersideTop + 2,
+          width - 4,
+          2,
+          0x17141b,
+          0.72,
+        ).setDepth(DEPTH.platform);
       }
     }
   }

@@ -83,6 +83,7 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     this.status.setText('PRÊT');
-    this.scene.start('WorldTwoScene');
+    // Le lancement normal du jeu doit ouvrir le Monde 1.
+    this.scene.start('GameScene');
   }
 }
