@@ -27,6 +27,12 @@ const REGIONS = [
 ] as const;
 
 const PLATFORMS: readonly PlatformDef[] = [
+  // Crypte oubliée (0–520) : parcours vertical progressif, accessible dès le début.
+  { x: 180, surface: 218, width: 112 },
+  { x: 320, surface: 190, width: 96 },
+  { x: 460, surface: 218, width: 112 },
+
+  // Régions suivantes : plateformes conservées à leur emplacement actuel.
   { x: 700, surface: 218, width: 140 },
   { x: 1060, surface: 230, width: 160 },
   { x: 660, surface: 186, width: 90 },
