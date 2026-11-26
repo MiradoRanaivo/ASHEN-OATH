@@ -129,13 +129,14 @@ export class PauseMenu {
       color: primary ? '#e2d1ad' : '#b8aa91',
       letterSpacing: 1,
     }).setOrigin(0.5);
-    const button = this.scene.add.container(x, y, [bg, text]);
-    bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerover', () => {
+    const button = this.scene.add.container(x, y, [bg, text])
+      .setSize(primary ? 118 : 104, 17)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerover', () => {
       bg.setFillStyle(0x49382d, 1);
       text.setColor('#f0dfbb');
     });
-    bg.on('pointerout', () => {
+    button.on('pointerout', () => {
       bg.setFillStyle(primary ? 0x332a27 : 0x211e22, 1);
       text.setColor(primary ? '#e2d1ad' : '#b8aa91');
     });
