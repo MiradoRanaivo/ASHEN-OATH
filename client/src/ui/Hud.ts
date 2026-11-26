@@ -1,99 +1,91 @@
 import Phaser from 'phaser';
-import { BOSS_AI, COLORS, DEPTH, PLAYER, VIEW } from '../config/GameConfig';
+import { BOSS_AI, PLAYER, VIEW, DEPTH } from '../config/GameConfig';
 
 /**
- * HUD compact inspiré des Souls : cadre bronze discret, sceau du chevalier,
- * jauges fines et lisibles. Tous les éléments restent fixes à la caméra.
+ * Interface minimaliste Souls-like : sceau, jauges horizontales et
+ * cartouche sombre discret. Aucun sprite d'atlas n'est étiré ici :
+ * le HUD est dessiné en pixels par Phaser pour éviter les chevauchements.
  */
 export class Hud {
-  private readonly scene: Phaser.Scene;
-  private readonly bars: Phaser.GameObjects.Graphics;
+  private readonly panel: Phaser.GameObjects.Graphics;
   private readonly crest: Phaser.GameObjects.Graphics;
+  private readonly bars: Phaser.GameObjects.Graphics;
   private readonly riposteLabel: Phaser.GameObjects.Text;
   private readonly bossBars: Phaser.GameObjects.Graphics;
   private readonly bossName: Phaser.GameObjects.Text;
   private readonly regionLabel: Phaser.GameObjects.Text;
-  private readonly panel?: Phaser.GameObjects.Image;
-  private readonly bossPanel?: Phaser.GameObjects.Image;
   private lastHp = -1;
   private lastStamina = -1;
   private currentRegion = '';
   private bossVisible = false;
-  private bossRatio = -1;
+  private bossRatio = 1;
 
   constructor(scene: Phaser.Scene) {
-    this.scene = scene;
+    const depth = DEPTH.hud;
 
-    if (scene.textures.exists('dark-ages-ui')) {
-      const texture = scene.textures.get('dark-ages-ui');
-      const frames = [
-        ['hud-panel', 0, 0, 96, 96],
-        ['dark-button', 208, 16, 64, 64],
-        ['dark-button-alt', 304, 16, 64, 64],
-        ['ornate-bar', 0, 104, 64, 24],
-        ['ornate-bar-alt', 64, 104, 64, 24],
-        ['gold-bar', 128, 104, 64, 24],
-      ] as const;
+    // Cartouche sombre fin, inspiré des interfaces Souls, sans cadre décoratif massif.
+    this.panel = scene.add.graphics().setScrollFactor(0).setDepth(depth);
+    this.panel.fillStyle(0x09090d, 0.76);
+    this.panel.fillRoundedRect(6, 6, 126, 39, 2);
+    this.panel.lineStyle(1, 0x67533a, 0.9);
+    this.panel.strokeRoundedRect(6, 6, 126, 39, 2);
+    this.panel.lineStyle(1, 0x29232a, 1);
+    this.panel.lineBetween(29, 10, 29, 41);
+    // Petits rivets aux coins : détails discrets, nets à l'échelle pixel art.
+    this.panel.fillStyle(0xb08a52, 1);
+    this.panel.fillRect(8, 8, 2, 2);
+    this.panel.fillRect(128, 8, 2, 2);
+    this.panel.fillRect(8, 41, 2, 2);
+    this.panel.fillRect(128, 41, 2, 2);
 
-      for (const [name, x, y, width, height] of frames) {
-        if (!texture.has(name)) texture.add(name, 0, x, y, width, height);
-      }
-
-      // Le cadre est volontairement réduit : il ne masque plus le décor.
-      this.panel = scene.add.image(6, 5, 'dark-ages-ui', 'hud-panel')
-        .setOrigin(0).setScale(0.49).setScrollFactor(0).setDepth(DEPTH.hud);
-
-      this.bossPanel = scene.add.image(VIEW.width / 2, 7, 'dark-ages-ui', 'gold-bar')
-        .setOrigin(0.5, 0).setScale(1.25, 0.58)
-        .setScrollFactor(0).setDepth(DEPTH.hud);
-    }
-
-    // Petit sceau circulaire à la place d'un portrait fictif.
-    this.crest = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.25);
+    this.crest = scene.add.graphics().setScrollFactor(0).setDepth(depth + 0.2);
     this.drawCrest();
 
-    scene.add.text(22, 10, 'ASHEN OATH', {
+    scene.add.text(35, 10, 'ASHEN OATH', {
       fontFamily: 'Georgia, serif',
-      fontSize: '6.5px',
-      color: '#e2d0a8',
-      stroke: '#17151b',
+      fontSize: '7px',
+      fontStyle: 'bold',
+      color: '#dfcfad',
+      stroke: '#09090d',
       strokeThickness: 2,
-    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.3);
+      resolution: 2,
+    }).setScrollFactor(0).setDepth(depth + 0.3);
 
-    this.regionLabel = scene.add.text(22, 18, 'CRYPTE OUBLIÉE', {
+    this.regionLabel = scene.add.text(35, 18, 'CRYPTE OUBLIÉE', {
       fontFamily: 'Georgia, serif',
       fontSize: '4px',
+      letterSpacing: 1,
       color: '#a99b82',
-      stroke: '#17151b',
+      stroke: '#09090d',
       strokeThickness: 1,
-    }).setScrollFactor(0).setDepth(DEPTH.hud + 0.3);
+    }).setScrollFactor(0).setDepth(depth + 0.3);
 
-    this.bars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.35);
+    this.bars = scene.add.graphics().setScrollFactor(0).setDepth(depth + 0.4);
 
-    this.riposteLabel = scene.add.text(10, VIEW.height - 10, '✦ RIPOSTE', {
+    this.riposteLabel = scene.add.text(10, VIEW.height - 10, '✦ RIPOSTE DISPONIBLE', {
       fontFamily: 'Georgia, serif',
       fontSize: '5px',
       color: '#d7bd78',
-      stroke: '#17151b',
+      stroke: '#09090d',
       strokeThickness: 2,
-    }).setOrigin(0, 1).setScrollFactor(0).setDepth(DEPTH.hud + 1).setVisible(false);
+    }).setOrigin(0, 1).setScrollFactor(0).setDepth(depth + 1).setVisible(false);
 
     scene.add.text(VIEW.width - 8, VIEW.height - 7, 'Q/D · ESPACE · J/K · L · I', {
       fontFamily: 'Georgia, serif',
       fontSize: '4px',
       color: '#a99b82',
-      stroke: '#17151b',
+      stroke: '#09090d',
       strokeThickness: 2,
-    }).setOrigin(1, 1).setScrollFactor(0).setDepth(DEPTH.hud + 0.5);
+    }).setOrigin(1, 1).setScrollFactor(0).setDepth(depth + 0.5);
 
-    this.bossBars = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 0.5);
-    this.bossName = scene.add.text(VIEW.width / 2, 10, '', {
+    this.bossBars = scene.add.graphics().setScrollFactor(0).setDepth(depth + 0.5);
+    this.bossName = scene.add.text(VIEW.width / 2, 7, '', {
       fontFamily: 'Georgia, serif',
-      fontSize: '5.5px',
+      fontSize: '5px',
       color: '#dfc99b',
-      stroke: '#17151b',
+      stroke: '#09090d',
       strokeThickness: 2,
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH.hud + 1);
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(depth + 1);
 
     this.draw(PLAYER.maxHp, PLAYER.maxStamina);
   }
@@ -113,17 +105,18 @@ export class Hud {
       this.bossName.setText('');
     }
 
-    this.bossPanel?.setVisible(this.bossVisible);
     this.bossBars.clear();
     if (this.bossVisible) {
-      const width = 76;
+      const width = 112;
       const x = VIEW.width / 2 - width / 2;
-      this.bossBars.fillStyle(0x100e13, 0.96);
-      this.bossBars.fillRect(x - 1, 21, width + 2, 4);
-      this.bossBars.fillStyle(0x54252a, 1);
-      this.bossBars.fillRect(x, 22, width, 2);
+      this.bossBars.fillStyle(0x09090d, 0.94);
+      this.bossBars.fillRect(x - 1, 17, width + 2, 5);
+      this.bossBars.fillStyle(0x4a2025, 1);
+      this.bossBars.fillRect(x, 18, width, 3);
       this.bossBars.fillStyle(0x9f3438, 1);
-      this.bossBars.fillRect(x, 22, width * this.bossRatio, 2);
+      this.bossBars.fillRect(x, 18, width * this.bossRatio, 3);
+      this.bossBars.lineStyle(1, 0x80613f, 0.9);
+      this.bossBars.strokeRect(x - 1, 17, width + 2, 5);
     }
   }
 
@@ -136,45 +129,49 @@ export class Hud {
 
   private drawCrest(): void {
     this.crest.clear();
-    this.crest.fillStyle(0x100f14, 0.96);
-    this.crest.fillCircle(13, 27, 5.5);
-    this.crest.lineStyle(1, 0xb18a4e, 1);
-    this.crest.strokeCircle(13, 27, 5.5);
-    this.crest.lineStyle(1, 0xd6c08c, 1);
-    this.crest.lineBetween(13, 23, 13, 31);
-    this.crest.lineBetween(10, 26, 16, 26);
-    this.crest.fillStyle(0xd6c08c, 1);
-    this.crest.fillTriangle(13, 22, 11, 25, 15, 25);
+    // Fond de l'écusson.
+    this.crest.fillStyle(0x111016, 1);
+    this.crest.fillCircle(18, 25, 10);
+    this.crest.lineStyle(1, 0xb08a52, 1);
+    this.crest.strokeCircle(18, 25, 10);
+    // Épée stylisée au centre.
+    this.crest.lineStyle(2, 0xd7c69f, 1);
+    this.crest.lineBetween(18, 17, 18, 31);
+    this.crest.lineStyle(1, 0xd7c69f, 1);
+    this.crest.lineBetween(14, 24, 22, 24);
+    this.crest.fillStyle(0xb08a52, 1);
+    this.crest.fillTriangle(18, 15, 15, 20, 21, 20);
+    this.crest.fillRect(16, 31, 4, 2);
   }
 
   private draw(hp: number, stamina: number): void {
     this.lastHp = hp;
     this.lastStamina = stamina;
-
-    const x = 22;
-    const width = 25;
+    const x = 35;
+    const width = 88;
     const hpRatio = Phaser.Math.Clamp(hp / PLAYER.maxHp, 0, 1);
     const staminaRatio = Phaser.Math.Clamp(stamina / PLAYER.maxStamina, 0, 1);
 
     this.bars.clear();
 
-    // Bord sombre et filet bronze, sans effet néon.
-    this.bars.fillStyle(0x100e13, 1);
-    this.bars.fillRect(x - 1, 26, width + 2, 5);
-    this.bars.lineStyle(0.5, 0x786044, 0.9);
-    this.bars.strokeRect(x - 1, 26, width + 2, 5);
-    this.bars.fillStyle(0x4b2025, 1);
-    this.bars.fillRect(x, 27, width, 3);
+    // Santé : rouge profond, avec un fond sombre visible lors des dégâts.
+    this.bars.fillStyle(0x09090d, 1);
+    this.bars.fillRect(x - 1, 26, width + 2, 6);
+    this.bars.lineStyle(1, 0x6b5038, 0.95);
+    this.bars.strokeRect(x - 1, 26, width + 2, 6);
+    this.bars.fillStyle(0x451b22, 1);
+    this.bars.fillRect(x, 27, width, 4);
     this.bars.fillStyle(0x9e343a, 1);
-    this.bars.fillRect(x, 27, width * hpRatio, 3);
+    this.bars.fillRect(x, 27, width * hpRatio, 4);
 
-    this.bars.fillStyle(0x100e13, 1);
-    this.bars.fillRect(x - 1, 34, width + 2, 4);
-    this.bars.lineStyle(0.5, 0x786044, 0.8);
-    this.bars.strokeRect(x - 1, 34, width + 2, 4);
-    this.bars.fillStyle(0x49401e, 1);
-    this.bars.fillRect(x, 35, width, 2);
-    this.bars.fillStyle(0xb99a4e, 1);
-    this.bars.fillRect(x, 35, width * staminaRatio, 2);
+    // Endurance : vert olive, comme les jauges classiques des Souls.
+    this.bars.fillStyle(0x09090d, 1);
+    this.bars.fillRect(x - 1, 35, width + 2, 5);
+    this.bars.lineStyle(1, 0x6b5038, 0.85);
+    this.bars.strokeRect(x - 1, 35, width + 2, 5);
+    this.bars.fillStyle(0x263321, 1);
+    this.bars.fillRect(x, 36, width, 3);
+    this.bars.fillStyle(0x718448, 1);
+    this.bars.fillRect(x, 36, width * staminaRatio, 3);
   }
 }
