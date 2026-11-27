@@ -88,7 +88,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.stateName === 'dead') return;
 
     if (this.stateName === 'stunned') {
-      this.stopHorizontalMovement();
+      // Le recul doit rester actif pendant l'étourdissement.
+      // On coupe uniquement l'accélération : la friction horizontale du corps
+      // ralentit naturellement l'ennemi sans annuler sa vitesse de knockback.
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setAccelerationX(0);
       if (this.stateElapsed >= this.profile.stunMs) {
         this.stateName = 'patrol';
         this.stateElapsed = 0;
