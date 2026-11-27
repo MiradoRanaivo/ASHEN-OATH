@@ -302,9 +302,10 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.alignBodyToFrame();
       this.enterState('phase-transition');
       this.scene.events.emit('boss-phase-two', this);
-    } else if (this.aiState !== 'phase-transition') {
-      this.enterState('hurt');
     }
+    // Un coup reçu ne doit pas interrompre l'action en cours :
+    // les préparations, attaques et récupérations continuent leur chronomètre
+    // et leur animation. Seuls la mort et le passage en phase 2 remplacent l'état.
 
     return true;
   }
