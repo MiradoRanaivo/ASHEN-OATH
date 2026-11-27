@@ -162,7 +162,7 @@ export class WorldTwoScene extends Phaser.Scene {
 
   private createNaturalGround(): void {
     const ground = this.add.graphics().setDepth(DEPTH.platform - 0.2);
-    const topPoints: Phaser.Geom.Point[] = [{ x: 0, y: groundYAt(0) }];
+    const topPoints: Phaser.Geom.Point[] = [new Phaser.Geom.Point(0, groundYAt(0))];
 
     for (let x = 0; x <= VIEW.worldWidth; x += GROUND_SEGMENT) {
       const top = groundYAt(x);
