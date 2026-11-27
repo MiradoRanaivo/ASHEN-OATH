@@ -572,7 +572,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateBossArena(): void {
-    const engaged = !this.boss.isDead && this.player.x >= BOSS_ARENA_LEFT - 20;
+    // La porte reste ouverte jusqu'à ce que le joueur soit réellement entré.
+    // Elle se ferme derrière lui au déclenchement du combat.
+    const engaged = !this.boss.isDead && this.player.x >= BOSS_ARENA_LEFT + 40;
     if (engaged !== this.bossArenaGateVisible) {
       this.bossArenaGateVisible = engaged;
       this.bossArenaGate.setVisible(engaged);

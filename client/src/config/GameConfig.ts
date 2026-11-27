@@ -183,7 +183,8 @@ export const DEPTH = {
 } as const;
 
 export const BOSS_AI = {
-  detectRange: 420,
+  // Le boss ne détecte le joueur qu'une fois celui-ci entré dans l'arène.
+  detectRange: 280,
   loseRange: 520,
   approachSpeed: 72,
   attackDistance: 82,
