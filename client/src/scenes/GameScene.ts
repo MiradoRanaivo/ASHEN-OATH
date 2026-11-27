@@ -14,8 +14,8 @@ interface PlatformDef {
 
 const PLATFORM_HEIGHT = 16;
 const BLOCK = 16;
-const REGION_WIDTH = VIEW.worldWidth / 4;
 const BOSS_ARENA_LEFT = 1360;
+const REGION_BOUNDARIES = [VIEW.worldWidth * 0.25, VIEW.worldWidth * 0.5, BOSS_ARENA_LEFT] as const;
 const BOSS_ARENA_RIGHT = 2000;
 const BACKGROUND_SCALE = 0.84;
 const BACKGROUND_SURFACE_Y = 334;
@@ -41,6 +41,13 @@ const ENEMIES: readonly EnemySpawn[] = [
 ];
 
 const SPAWN_POINT = { x: 60, y: VIEW.groundY };
+
+function getRegionIndex(x: number): number {
+  if (x < REGION_BOUNDARIES[0]) return 0;
+  if (x < REGION_BOUNDARIES[1]) return 1;
+  if (x < REGION_BOUNDARIES[2]) return 2;
+  return 3;
+}
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -135,7 +142,7 @@ export class GameScene extends Phaser.Scene {
 
     this.updateBackdropParallax();
 
-    const region = Math.min(3, Math.floor(this.player.x / REGION_WIDTH));
+    const region = getRegionIndex(this.player.x);
     if (region !== this.activeRegion) {
       this.activeRegion = region;
       this.background.setTint(REGIONS[region].backgroundTint);
