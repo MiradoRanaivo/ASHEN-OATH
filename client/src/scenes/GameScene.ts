@@ -727,7 +727,7 @@ export class GameScene extends Phaser.Scene {
   /** Cendres fines en suspension : ambiance discrète, limitée à l'écran et sans collision. */
   private createAmbientAsh(): void {
     if (!this.textures.exists('ambient-ash-pixel')) {
-      const pixel = this.make.graphics({ x: 0, y: 0, add: false });
+      const pixel = this.make.graphics({ x: 0, y: 0 });
       pixel.fillStyle(0xd8c5a2, 1);
       pixel.fillRect(0, 0, 2, 2);
       pixel.generateTexture('ambient-ash-pixel', 2, 2);
@@ -735,10 +735,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.add.particles(0, 0, 'ambient-ash-pixel', {
-      emitZone: {
-        type: 'random',
-        source: new Phaser.Geom.Rectangle(0, 0, VIEW.width, VIEW.height),
-      },
+      // Les offsets répartissent les cendres sur toute la zone visible.
+      x: { min: 0, max: VIEW.width },
+      y: { min: 0, max: VIEW.height },
       frequency: 260,
       quantity: 1,
       maxParticles: 24,
