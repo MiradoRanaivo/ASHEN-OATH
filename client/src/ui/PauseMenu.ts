@@ -148,6 +148,8 @@ export class PauseMenu {
       }
     };
     scene.input.keyboard?.on('keydown-ESC', this.escapeHandler);
+    // Évite de conserver un listener clavier si la scène est arrêtée ou relancée.
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
   }
 
   get isOpen(): boolean {
