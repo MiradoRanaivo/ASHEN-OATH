@@ -22,6 +22,7 @@ export type BossAttackKind = 'melee' | 'beam' | 'magic';
 export interface BossAttackBox {
   readonly kind: BossAttackKind;
   readonly box: Phaser.Geom.Rectangle;
+  readonly ellipse?: Phaser.Geom.Ellipse;
   readonly damage: number;
 }
 
@@ -116,9 +117,17 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       return [{
         kind: 'magic',
         damage: BOSS_AI.magicDamage,
+        // L'ellipse correspond exactement à la zone annoncée par le télégraphe
+        // et par le visuel AOE (même centre et mêmes dimensions).
         box: new Phaser.Geom.Rectangle(
           this.x - BOSS_AI.magicRange / 2,
           this.y - BOSS_AI.magicHeight,
+          BOSS_AI.magicRange,
+          BOSS_AI.magicHeight,
+        ),
+        ellipse: new Phaser.Geom.Ellipse(
+          this.x,
+          this.y - BOSS_AI.magicHeight / 2,
           BOSS_AI.magicRange,
           BOSS_AI.magicHeight,
         ),

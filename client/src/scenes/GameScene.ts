@@ -233,7 +233,10 @@ export class GameScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const target = new Phaser.Geom.Rectangle(body.x, body.y, body.width, body.height);
     for (const attack of this.boss.getAttackBoxes()) {
-      if (!Phaser.Geom.Intersects.RectangleToRectangle(attack.box, target)) {
+      const intersectsAttack = attack.ellipse
+        ? Phaser.Geom.Intersects.RectangleToEllipse(target, attack.ellipse)
+        : Phaser.Geom.Intersects.RectangleToRectangle(attack.box, target);
+      if (!intersectsAttack) {
         continue;
       }
 
