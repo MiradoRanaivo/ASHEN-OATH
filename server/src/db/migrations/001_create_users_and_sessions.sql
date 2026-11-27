@@ -1,30 +1,30 @@
-CREATE TABLE users (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  username varchar(24) NOT NULL,
-  email varchar(254) NOT NULL,
-  password_hash text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT users_username_length CHECK (char_length(username) BETWEEN 3 AND 24),
-  CONSTRAINT users_email_length CHECK (char_length(email) BETWEEN 5 AND 254),
-  CONSTRAINT users_password_hash_not_empty CHECK (length(password_hash) > 0)
-);
+CREATE TABLE IF NOT EXISTS users (
+  id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  username VARCHAR(24) NOT NULL,
+  email VARCHAR(254) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY users_username_unique (username),
+  UNIQUE KEY users_email_unique (email),
+  CONSTRAINT users_username_length CHECK (CHAR_LENGTH(username) BETWEEN 3 AND 24),
+  CONSTRAINT users_email_length CHECK (CHAR_LENGTH(email) BETWEEN 5 AND 254),
+  CONSTRAINT users_password_hash_not_empty CHECK (CHAR_LENGTH(password_hash) > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE UNIQUE INDEX users_username_lower_unique
-  ON users (lower(username));
-
-CREATE UNIQUE INDEX users_email_lower_unique
-  ON users (lower(email));
-
-CREATE TABLE sessions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash char(64) NOT NULL UNIQUE,
-  expires_at timestamptz NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  last_seen_at timestamptz NOT NULL DEFAULT now(),
-  revoked_at timestamptz
-);
-
-CREATE INDEX sessions_user_id_idx ON sessions (user_id);
-CREATE INDEX sessions_expires_at_idx ON sessions (expires_at);
+CREATE TABLE IF NOT EXISTS sessions (
+  id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  user_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  expires_at DATETIME(3) NOT NULL,
+  created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  last_seen_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  revoked_at DATETIME(3) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY sessions_token_hash_unique (token_hash),
+  KEY sessions_user_id_idx (user_id),
+  KEY sessions_expires_at_idx (expires_at),
+  CONSTRAINT sessions_user_fk FOREIGN KEY (user_id)
+    REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

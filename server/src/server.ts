@@ -15,7 +15,7 @@ const shutdown = (signal: string): void => {
     }
 
     void pool.end().catch((poolError: unknown) => {
-      console.error("Error while closing PostgreSQL pool:", poolError);
+      console.error("Error while closing MySQL pool:", poolError);
       process.exitCode = 1;
     });
   });

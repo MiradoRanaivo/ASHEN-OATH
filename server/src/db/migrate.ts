@@ -1,20 +1,31 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import type { RowDataPacket } from "mysql2";
 import { pool } from "./pool";
 
 const migrationsDirectory = join(__dirname, "migrations");
+const migrationLockName = "ashen_oath_schema_migrations";
 
 async function runMigrations(): Promise<void> {
-  const client = await pool.connect();
+  const connection = await pool.getConnection();
+  let lockAcquired = false;
 
   try {
-    await client.query("SELECT pg_advisory_lock($1)", [7_341_902]);
+    const [lockRows] = await connection.query<RowDataPacket[]>(
+      "SELECT GET_LOCK(?, 10) AS acquired",
+      [migrationLockName],
+    );
 
-    await client.query(`
+    lockAcquired = lockRows[0]?.acquired === 1;
+    if (!lockAcquired) {
+      throw new Error("Could not acquire the database migration lock.");
+    }
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
-        name varchar(255) PRIMARY KEY,
-        applied_at timestamptz NOT NULL DEFAULT now()
-      )
+        name VARCHAR(255) NOT NULL PRIMARY KEY,
+        applied_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
     `);
 
     const migrationFiles = readdirSync(migrationsDirectory)
@@ -22,35 +33,46 @@ async function runMigrations(): Promise<void> {
       .sort();
 
     for (const file of migrationFiles) {
-      const alreadyApplied = await client.query(
-        "SELECT 1 FROM schema_migrations WHERE name = $1",
+      const [appliedRows] = await connection.execute<RowDataPacket[]>(
+        "SELECT name FROM schema_migrations WHERE name = ?",
         [file],
       );
 
-      if (alreadyApplied.rowCount) {
+      if (appliedRows.length > 0) {
         console.info(`Migration already applied: ${file}`);
         continue;
       }
 
       const sql = readFileSync(join(migrationsDirectory, file), "utf8");
+      const statements = sql
+        .split(";")
+        .map((statement) => statement.trim())
+        .filter(Boolean);
 
-      await client.query("BEGIN");
-      try {
-        await client.query(sql);
-        await client.query("INSERT INTO schema_migrations (name) VALUES ($1)", [file]);
-        await client.query("COMMIT");
-        console.info(`Migration applied: ${file}`);
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
+      console.info(`Applying migration: ${file}`);
+
+      // MySQL DDL statements may commit implicitly; migrations are therefore
+      // recorded only after every statement in the file succeeds.
+      for (const statement of statements) {
+        await connection.query(statement);
       }
+
+      await connection.execute(
+        "INSERT INTO schema_migrations (name) VALUES (?)",
+        [file],
+      );
+      console.info(`Migration applied: ${file}`);
     }
   } finally {
-    try {
-      await client.query("SELECT pg_advisory_unlock($1)", [7_341_902]);
-    } finally {
-      client.release();
+    if (lockAcquired) {
+      try {
+        await connection.query("SELECT RELEASE_LOCK(?)", [migrationLockName]);
+      } catch (error) {
+        console.error("Could not release the database migration lock:", error);
+      }
     }
+
+    connection.release();
   }
 }
 
