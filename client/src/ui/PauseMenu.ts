@@ -13,8 +13,8 @@ export class PauseMenu {
   private opened = false;
   private showingControls = false;
 
-  private readonly mainItems: Phaser.GameObjects.GameObject[] = [];
-  private readonly controlItems: Phaser.GameObjects.GameObject[] = [];
+  private readonly mainItems: Array<{ setVisible(visible: boolean): unknown }> = [];
+  private readonly controlItems: Array<{ setVisible(visible: boolean): unknown }> = [];
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -178,7 +178,7 @@ export class PauseMenu {
 
   private showControls(show: boolean): void {
     this.showingControls = show;
-    this.mainItems.forEach(item => (item as Phaser.GameObjects.GameObject).setVisible(!show));
+    this.mainItems.forEach(item => item.setVisible(!show));
     this.controlItems.forEach(item => item.setVisible(show));
   }
 
