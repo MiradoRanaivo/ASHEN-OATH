@@ -90,6 +90,7 @@ export class GameScene extends Phaser.Scene {
 
     this.createBlockTextures();
     this.createBackdrop();
+    this.createAmbientAsh();
     this.createPlatforms();
     this.createGroundDetails();
     this.createCryptProps();
@@ -721,6 +722,34 @@ export class GameScene extends Phaser.Scene {
     shade.fillRect(0, 0, VIEW.width, VIEW.height);
     shade.fillStyle(0x0b0a10, 0.4);
     shade.fillRect(0, VIEW.height - 56, VIEW.width, 56);
+  }
+
+  /** Cendres fines en suspension : ambiance discrète, limitée à l'écran et sans collision. */
+  private createAmbientAsh(): void {
+    if (!this.textures.exists('ambient-ash-pixel')) {
+      const pixel = this.make.graphics({ x: 0, y: 0, add: false });
+      pixel.fillStyle(0xd8c5a2, 1);
+      pixel.fillRect(0, 0, 2, 2);
+      pixel.generateTexture('ambient-ash-pixel', 2, 2);
+      pixel.destroy();
+    }
+
+    this.add.particles(0, 0, 'ambient-ash-pixel', {
+      emitZone: {
+        type: 'random',
+        source: new Phaser.Geom.Rectangle(0, 0, VIEW.width, VIEW.height),
+      },
+      frequency: 260,
+      quantity: 1,
+      maxParticles: 24,
+      lifespan: { min: 4200, max: 7600 },
+      speedX: { min: -5, max: 7 },
+      speedY: { min: -11, max: -3 },
+      scale: { start: 0.7, end: 0.15 },
+      alpha: { start: 0.2, end: 0 },
+    })
+      .setScrollFactor(0)
+      .setDepth(DEPTH.effect - 0.4);
   }
 
   private createPlatforms(): void {
